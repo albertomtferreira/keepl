@@ -123,22 +123,22 @@ Acceptance criteria:
 
 ## Phase 1: Foundation
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Add Firebase client configuration.
-- [ ] Define required Firebase environment variables.
-- [ ] Implement Google Sign-In.
-- [ ] Add login route for unauthenticated users.
-- [ ] Add authenticated route protection for app routes.
-- [ ] Create or update `users/{userId}` document after first authentication.
-- [ ] Add app shell with responsive layout.
-- [ ] Add mobile bottom navigation: Home, People, Add, Memories, Upcoming.
-- [ ] Add desktop/tablet navigation using the same information architecture.
-- [ ] Add initial routes: Home, People, Memories, Upcoming, Settings.
-- [ ] Add PWA manifest, theme metadata, viewport configuration, and placeholder icons.
-- [ ] Add Firestore security rules.
+- [x] Add Firebase client configuration.
+- [x] Define required Firebase environment variables.
+- [x] Implement Google Sign-In.
+- [x] Add login route for unauthenticated users.
+- [x] Add authenticated route protection for app routes.
+- [x] Create or update `users/{userId}` document after first authentication.
+- [x] Add app shell with responsive layout.
+- [x] Add mobile bottom navigation: Home, People, Add, Memories, Upcoming.
+- [x] Add desktop/tablet navigation using the same information architecture.
+- [x] Add initial routes: Home, People, Memories, Upcoming, Settings.
+- [x] Add PWA manifest, theme metadata, viewport configuration, and placeholder icons.
+- [x] Add Firestore security rules.
 
 Acceptance criteria:
 

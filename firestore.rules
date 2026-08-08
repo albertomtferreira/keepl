@@ -1,0 +1,60 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsExistingDocument() {
+      return isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    function ownsIncomingDocument() {
+      return isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow create: if isSignedIn()
+        && userId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if ownsExistingDocument() && userId == request.auth.uid;
+      allow update: if ownsExistingDocument()
+        && ownsIncomingDocument()
+        && userId == request.auth.uid;
+    }
+
+    match /{collection}/{documentId} {
+      allow create: if collection in [
+        'people',
+        'relationships',
+        'importantDates',
+        'personNotes',
+        'memories',
+        'interactions',
+        'groups',
+        'reminders'
+      ] && ownsIncomingDocument();
+      allow read, delete: if collection in [
+        'people',
+        'relationships',
+        'importantDates',
+        'personNotes',
+        'memories',
+        'interactions',
+        'groups',
+        'reminders'
+      ] && ownsExistingDocument();
+      allow update: if collection in [
+        'people',
+        'relationships',
+        'importantDates',
+        'personNotes',
+        'memories',
+        'interactions',
+        'groups',
+        'reminders'
+      ] && ownsExistingDocument() && ownsIncomingDocument();
+    }
+  }
+}
