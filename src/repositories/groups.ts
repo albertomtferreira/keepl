@@ -6,8 +6,10 @@ export class GroupsRepository extends OwnedFirestoreRepository<Group> {
     super("groups");
   }
 
-  listByName(ownerId: string) {
-    return this.list(ownerId, { orderBy: { field: "name" } });
+  async listByName(ownerId: string) {
+    const groups = await this.list(ownerId);
+
+    return groups.sort((first, second) => first.name.localeCompare(second.name));
   }
 }
 

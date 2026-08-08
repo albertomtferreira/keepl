@@ -8,6 +8,10 @@ export class ImportantDatesRepository extends OwnedFirestoreRepository<Important
     super("importantDates");
   }
 
+  listForOwner(ownerId: string) {
+    return this.list(ownerId);
+  }
+
   listForPerson(ownerId: string, personId: string) {
     return this.list(ownerId, { constraints: [where("personId", "==", personId)] });
   }

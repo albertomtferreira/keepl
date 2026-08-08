@@ -187,22 +187,22 @@ Acceptance criteria:
 
 ## Phase 3: People MVP
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Build People list page.
-- [ ] Add search by `displayName`, `firstName`, `lastName`, and `nickname`.
-- [ ] Add alphabetical sorting.
-- [ ] Add group filter UI placeholder or initial implementation.
-- [ ] Build Add Person flow.
-- [ ] Keep creation form minimal: first name, last name, nickname, birthday, phone, email, groups.
-- [ ] Redirect to person profile after creation.
-- [ ] Build person profile route.
-- [ ] Add profile sections for About, Important Dates, Notes, Relationships, Memories, Social Profiles, and Groups.
-- [ ] Prefer compact empty sections with edit actions over large empty forms.
-- [ ] Build Edit Person flow.
-- [ ] Add archive or delete capability.
+- [x] Build People list page.
+- [x] Add search by `displayName`, `firstName`, `lastName`, and `nickname`.
+- [x] Add alphabetical sorting.
+- [x] Add group filter UI placeholder or initial implementation.
+- [x] Build Add Person flow.
+- [x] Keep creation form minimal: first name, last name, nickname, birthday, phone, email, groups.
+- [x] Redirect to person profile after creation.
+- [x] Build person profile route.
+- [x] Add profile sections for About, Important Dates, Notes, Relationships, Memories, Social Profiles, and Groups.
+- [x] Prefer compact empty sections with edit actions over large empty forms.
+- [x] Build Edit Person flow.
+- [x] Add archive or delete capability.
 
 Acceptance criteria:
 
@@ -213,18 +213,26 @@ Acceptance criteria:
 
 ## Phase 4: Important Dates and Notes
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Implement date model that supports full dates and dates without a year.
-- [ ] Add important date CRUD.
-- [ ] Add notes CRUD.
-- [ ] Add pinned notes.
-- [ ] Show important dates and pinned notes on person profile.
-- [ ] Build date utilities for annual recurrence and next occurrence calculations.
-- [ ] Build Upcoming page grouped by Today, This Week, This Month, and Later.
-- [ ] Add tests for date utilities and upcoming calculations.
+- [x] Implement date model that supports full dates and dates without a year.
+- [x] Add important date CRUD.
+- [x] Add notes CRUD.
+- [x] Add pinned notes.
+- [x] Show important dates and pinned notes on person profile.
+- [x] Build date utilities for annual recurrence and next occurrence calculations.
+- [x] Build Upcoming page grouped by Today, This Week, This Month, and Later.
+- [x] Add tests for date utilities and upcoming calculations.
+
+Implementation notes:
+
+- Important dates are managed inline from the person profile.
+- Notes are managed inline from the person profile and can be pinned or unpinned.
+- `FlexibleDate` supports month/day dates without known years for birthdays and recurring events.
+- Upcoming dates are calculated client-side from owned important dates and active people, then grouped by Today, This Week, This Month, and Later.
+- Focused date utility tests run through `npm test`.
 
 Acceptance criteria:
 
@@ -379,8 +387,8 @@ Do not implement these during the MVP unless explicitly reprioritized:
 
 ## Immediate Next Step
 
-Start with Phase 0 and Phase 1:
+Start with Phase 5:
 
-1. Initialize the Next.js application with the agreed stack.
-2. Configure Firebase, authentication, route protection, app shell, primary routes, PWA basics, domain types, repository foundations, and Firestore security rules.
-3. Validate with lint, TypeScript checks, tests where present, and production build.
+1. Implement relationship creation between existing people.
+2. Add inverse relationship helpers and current-person perspective labels.
+3. Validate with lint, TypeScript checks, targeted tests, and production build.

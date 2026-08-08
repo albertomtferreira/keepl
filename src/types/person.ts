@@ -26,5 +26,5 @@ export type Person = UserOwnedEntity & {
   photo?: PhotoReference;
   source: PersonSource;
   sourceId?: string;
-  archivedAt?: Date;
+  archivedAt?: Date | null;
 };
