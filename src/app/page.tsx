@@ -1,69 +1,69 @@
-import Image from "next/image";
+import { ArrowRight, CalendarHeart, HeartHandshake, UsersRound } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-dvh bg-[#fbfaf7] text-foreground">
+      <section className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-6 py-8 sm:px-10 lg:px-12">
+        <header className="flex items-center justify-between">
+          <div className="text-lg font-semibold tracking-normal">Keepl</div>
+          <Button variant="ghost" size="sm">
+            Phase 0
+          </Button>
+        </header>
+
+        <div className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-2xl">
+            <p className="mb-4 text-sm font-medium text-muted-foreground">
+              Private, person-centred memory keeping.
+            </p>
+            <h1 className="text-4xl font-semibold leading-tight tracking-normal text-balance sm:text-5xl">
+              Remember the people and details that make life feel close.
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+              Keepl is set up with Next.js, TypeScript, Tailwind CSS, shadcn/ui,
+              Firebase-ready dependencies, and PWA tooling.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button className="gap-2">
+                Start local setup
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
+              <Button variant="outline">Read the plan</Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {[
+              {
+                icon: UsersRound,
+                title: "People first",
+                text: "The core domain stays centered on the people that matter.",
+              },
+              {
+                icon: CalendarHeart,
+                title: "Dates and reminders",
+                text: "Built to grow into birthdays, anniversaries, and gentle nudges.",
+              },
+              {
+                icon: HeartHandshake,
+                title: "Memories with context",
+                text: "Notes, groups, relationships, and memories can connect back to a person.",
+              },
+            ].map((item) => (
+              <article
+                className="rounded-lg border bg-card p-5 text-card-foreground shadow-sm"
+                key={item.title}
+              >
+                <item.icon className="mb-4 size-5 text-primary" aria-hidden="true" />
+                <h2 className="text-base font-semibold">{item.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }

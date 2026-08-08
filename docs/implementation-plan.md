@@ -100,19 +100,19 @@ Required ownership rule:
 
 ## Phase 0: Repository Setup
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Initialize Git repository if desired by the project owner.
-- [ ] Initialize Next.js app in the existing workspace.
-- [ ] Configure TypeScript strict mode.
-- [ ] Configure Tailwind CSS.
-- [ ] Install and configure shadcn/ui.
-- [ ] Install Firebase, React Hook Form, Zod, date-fns, Lucide icons, and PWA tooling.
-- [ ] Add baseline linting and formatting scripts.
-- [ ] Add `.env.example`.
-- [ ] Add project README with local setup instructions.
+- [x] Initialize Git repository if desired by the project owner.
+- [x] Initialize Next.js app in the existing workspace.
+- [x] Configure TypeScript strict mode.
+- [x] Configure Tailwind CSS.
+- [x] Install and configure shadcn/ui.
+- [x] Install Firebase, React Hook Form, Zod, date-fns, Lucide icons, and PWA tooling.
+- [x] Add baseline linting and formatting scripts.
+- [x] Add `.env.example`.
+- [x] Add project README with local setup instructions.
 
 Acceptance criteria:
 
@@ -376,4 +376,3 @@ Start with Phase 0 and Phase 1:
 1. Initialize the Next.js application with the agreed stack.
 2. Configure Firebase, authentication, route protection, app shell, primary routes, PWA basics, domain types, repository foundations, and Firestore security rules.
 3. Validate with lint, TypeScript checks, tests where present, and production build.
-
