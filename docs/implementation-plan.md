@@ -304,18 +304,27 @@ Acceptance criteria:
 
 ## Phase 7: Groups and Interactions
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Implement groups repository.
-- [ ] Provide suggested default group names without forcing them.
-- [ ] Allow people to belong to multiple groups.
-- [ ] Add group filtering to People.
-- [ ] Implement basic interaction model and repository.
-- [ ] Add optional lightweight interaction creation.
-- [ ] Add last-interaction calculation if interaction data exists.
-- [ ] Build Home "Worth Remembering" foundation using pinned notes and optionally older interactions.
+- [x] Implement groups repository.
+- [x] Provide suggested default group names without forcing them.
+- [x] Allow people to belong to multiple groups.
+- [x] Add group filtering to People.
+- [x] Implement basic interaction model and repository.
+- [x] Add optional lightweight interaction creation.
+- [x] Add last-interaction calculation if interaction data exists.
+- [x] Build Home "Worth Remembering" foundation using pinned notes and optionally older interactions.
+
+Implementation notes:
+
+- Groups are user-owned Firestore records and people store multiple `groupIds`.
+- The People form now uses existing group records as selectable checkboxes, offers optional suggested group names, and supports inline custom group creation.
+- People list filtering uses owned groups sorted alphabetically.
+- Interactions are lightweight records with a kind, date, and optional summary, managed inline from a person profile.
+- Interaction listing currently loads owner-scoped records and sorts client-side to avoid forcing a composite index during the MVP.
+- Home includes a "Worth remembering" foundation that surfaces pinned notes and interactions older than 30 days.
 
 Acceptance criteria:
 
@@ -411,5 +420,4 @@ Start with Phase 5:
 
 
 ## Improvements
-- Groups - Let the user create groups to prevent duplication or label mistakes. The field on the "create/edit" person should render a dropdown box with multiple selections, with the groups organised by alphabetic order and at the bottom of the selection add an option to add new groups
 - The user should be able to set a relationship with the created person

@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { suggestedGroupNames } from "@/features/groups/group-suggestions";
 import { useAuth } from "@/lib/auth/auth-context";
 import { groupsRepository } from "@/repositories/groups";
 import { peopleRepository } from "@/repositories/people";
@@ -22,7 +23,6 @@ const personSchema = z.object({
   birthday: z.string().optional(),
   phone: z.string().trim().optional(),
   email: z.string().trim().email("Use a valid email").or(z.literal("")),
-  groups: z.string().trim().optional(),
 });
 
 type PersonFormValues = z.infer<typeof personSchema>;
@@ -35,6 +35,8 @@ export function PersonForm({ person }: PersonFormProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(person?.groupIds ?? []);
+  const [newGroupName, setNewGroupName] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -46,14 +48,11 @@ export function PersonForm({ person }: PersonFormProps) {
     groupsRepository.listByName(user.uid).then(setGroups).catch(() => setGroups([]));
   }, [user]);
 
-  const defaultGroupNames = useMemo(() => {
-    if (!person?.groupIds?.length) {
-      return "";
-    }
+  const suggestedGroupsToCreate = useMemo(() => {
+    const existing = new Set(groups.map((group) => group.name.toLowerCase()));
 
-    const groupMap = new Map(groups.map((group) => [group.id, group.name]));
-    return person.groupIds.map((id) => groupMap.get(id)).filter(Boolean).join(", ");
-  }, [groups, person]);
+    return suggestedGroupNames.filter((name) => !existing.has(name.toLowerCase()));
+  }, [groups]);
 
   const {
     formState: { errors },
@@ -68,27 +67,42 @@ export function PersonForm({ person }: PersonFormProps) {
       birthday: birthdayInputValue(person?.birthday),
       phone: person?.phoneNumbers?.find((phone) => phone.primary)?.value ?? person?.phoneNumbers?.[0]?.value ?? "",
       email: person?.emails?.find((email) => email.primary)?.value ?? person?.emails?.[0]?.value ?? "",
-      groups: defaultGroupNames,
     },
   });
 
-  async function resolveGroupIds(ownerId: string, rawGroups?: string) {
-    const names = [...new Set((rawGroups ?? "").split(",").map((name) => name.trim()).filter(Boolean))];
-    const knownGroups = groups.length ? groups : await groupsRepository.listByName(ownerId);
-    const existingByName = new Map(knownGroups.map((group) => [group.name.toLowerCase(), group]));
-    const groupIds: string[] = [];
+  function toggleGroup(groupId: string) {
+    setSelectedGroupIds((current) => (current.includes(groupId) ? current.filter((id) => id !== groupId) : [...current, groupId]));
+  }
 
-    for (const name of names) {
-      const existing = existingByName.get(name.toLowerCase());
-      if (existing) {
-        groupIds.push(existing.id);
-      } else {
-        const id = await groupsRepository.create(ownerId, { name });
-        groupIds.push(id);
-      }
+  async function createGroup(name: string) {
+    if (!user) {
+      setFormError("Sign in again before adding a group.");
+      return;
     }
 
-    return groupIds;
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    const existing = groups.find((group) => group.name.toLowerCase() === trimmedName.toLowerCase());
+
+    if (existing) {
+      setSelectedGroupIds((current) => (current.includes(existing.id) ? current : [...current, existing.id]));
+      setNewGroupName("");
+      return;
+    }
+
+    const id = await groupsRepository.create(user.uid, { name: trimmedName });
+    const created = await groupsRepository.getById(user.uid, id);
+
+    if (created) {
+      setGroups((current) => [...current, created].sort((first, second) => first.name.localeCompare(second.name)));
+      setSelectedGroupIds((current) => [...current, id]);
+    }
+
+    setNewGroupName("");
   }
 
   async function onSubmit(values: PersonFormValues) {
@@ -102,7 +116,6 @@ export function PersonForm({ person }: PersonFormProps) {
 
     try {
       const displayName = [values.firstName, values.lastName].filter(Boolean).join(" ");
-      const groupIds = await resolveGroupIds(user.uid, values.groups);
       const optionalFields = {
         ...(values.lastName ? { lastName: values.lastName } : {}),
         ...(values.nickname ? { nickname: values.nickname } : {}),
@@ -116,7 +129,7 @@ export function PersonForm({ person }: PersonFormProps) {
         phoneNumbers: values.phone ? [{ value: values.phone, primary: true }] : [],
         emails: values.email ? [{ value: values.email, primary: true }] : [],
         socialProfiles: person?.socialProfiles ?? [],
-        groupIds,
+        groupIds: selectedGroupIds,
         source: person?.source ?? "manual",
         archivedAt: person?.archivedAt ?? null,
         ...optionalFields,
@@ -159,9 +172,37 @@ export function PersonForm({ person }: PersonFormProps) {
         </Field>
       </div>
 
-      <Field label="Groups" hint="Separate group names with commas." error={errors.groups?.message}>
-        <input className={inputClassName} placeholder="Family, Porto friends" {...register("groups")} />
-      </Field>
+      <div className="space-y-3 rounded-lg border bg-white p-4">
+        <div>
+          <h2 className="text-sm font-medium">Groups</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Choose any groups that fit, or add your own.</p>
+        </div>
+        {groups.length ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {groups.map((group) => (
+              <label key={group.id} className="flex min-h-9 items-center gap-2 rounded-lg border px-3 text-sm">
+                <input type="checkbox" checked={selectedGroupIds.includes(group.id)} onChange={() => toggleGroup(group.id)} className="size-4 accent-primary" />
+                <span>{group.name}</span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+        {suggestedGroupsToCreate.length ? (
+          <div className="flex flex-wrap gap-2">
+            {suggestedGroupsToCreate.map((name) => (
+              <Button key={name} type="button" variant="outline" size="sm" onClick={() => createGroup(name)}>
+                Add {name}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <input value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} className={inputClassName} placeholder="New group name" />
+          <Button type="button" variant="outline" onClick={() => createGroup(newGroupName)}>
+            Add group
+          </Button>
+        </div>
+      </div>
 
       {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
 

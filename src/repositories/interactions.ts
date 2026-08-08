@@ -1,5 +1,3 @@
-import { where } from "firebase/firestore";
-
 import { OwnedFirestoreRepository } from "@/repositories/base-repository";
 import type { Interaction } from "@/types";
 
@@ -8,12 +6,21 @@ export class InteractionsRepository extends OwnedFirestoreRepository<Interaction
     super("interactions");
   }
 
-  listForPerson(ownerId: string, personId: string) {
-    return this.list(ownerId, {
-      constraints: [where("personId", "==", personId)],
-      orderBy: { field: "occurredAt", direction: "desc" },
-    });
+  async listRecent(ownerId: string, count = 10) {
+    const interactions = await this.list(ownerId);
+
+    return sortByNewestOccurrence(interactions).slice(0, count);
   }
+
+  async listForPerson(ownerId: string, personId: string) {
+    const interactions = await this.list(ownerId);
+
+    return sortByNewestOccurrence(interactions.filter((interaction) => interaction.personId === personId));
+  }
+}
+
+function sortByNewestOccurrence(interactions: Interaction[]) {
+  return [...interactions].sort((first, second) => second.occurredAt.toMillis() - first.occurredAt.toMillis());
 }
 
 export const interactionsRepository = new InteractionsRepository();

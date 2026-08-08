@@ -7,6 +7,7 @@ import {
   Edit,
   Library,
   Mail,
+  MessageCircle,
   NotebookText,
   Phone,
   Tags,
@@ -20,17 +21,20 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { MemoryCard } from "@/features/memories/memory-card";
+import { InteractionManager } from "@/features/interactions/interaction-manager";
+import { formatLastInteraction } from "@/features/interactions/interaction-format";
 import { ImportantDateManager } from "@/features/important-dates/important-date-manager";
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
 import { RelationshipManager } from "@/features/relationships/relationship-manager";
 import { useAuth } from "@/lib/auth/auth-context";
 import { groupsRepository } from "@/repositories/groups";
 import { importantDatesRepository } from "@/repositories/important-dates";
+import { interactionsRepository } from "@/repositories/interactions";
 import { memoriesRepository } from "@/repositories/memories";
 import { personNotesRepository } from "@/repositories/person-notes";
 import { peopleRepository } from "@/repositories/people";
 import { relationshipsRepository } from "@/repositories/relationships";
-import type { Group, ImportantDate, Memory, Person, PersonNote, Relationship } from "@/types";
+import type { Group, ImportantDate, Interaction, Memory, Person, PersonNote, Relationship } from "@/types";
 import { formatBirthday, getPersonInitials, groupNamesForPerson } from "./person-format";
 
 export function PersonProfileClient({ personId }: { personId: string }) {
@@ -43,6 +47,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
   const [notes, setNotes] = useState<PersonNote[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +58,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
 
     async function loadProfile() {
       setLoading(true);
-      const [personResult, peopleResult, groupsResult, datesResult, notesResult, relationshipsResult, memoriesResult] = await Promise.all([
+      const [personResult, peopleResult, groupsResult, datesResult, notesResult, relationshipsResult, memoriesResult, interactionsResult] = await Promise.all([
         peopleRepository.getById(ownerId, personId),
         peopleRepository.listActive(ownerId),
         groupsRepository.listByName(ownerId),
@@ -61,6 +66,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         personNotesRepository.listForPerson(ownerId, personId).catch(() => []),
         relationshipsRepository.listForPerson(ownerId, personId).catch(() => []),
         memoriesRepository.listForPerson(ownerId, personId).catch(() => []),
+        interactionsRepository.listForPerson(ownerId, personId).catch(() => []),
       ]);
 
       setPerson(personResult);
@@ -70,6 +76,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
       setNotes(notesResult);
       setRelationships(relationshipsResult);
       setMemories(memoriesResult);
+      setInteractions(interactionsResult);
       setLoading(false);
     }
 
@@ -110,6 +117,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
   }
 
   const groupNames = groupNamesForPerson(person, groups);
+  const lastInteraction = interactions[0];
 
   return (
     <div className="space-y-5">
@@ -129,6 +137,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
             <div>
               <h1 className="text-2xl font-semibold">{person.displayName}</h1>
               {person.nickname ? <p className="text-sm text-muted-foreground">Goes by {person.nickname}</p> : null}
+              {lastInteraction ? <p className="text-sm text-muted-foreground">Last interaction {formatLastInteraction(lastInteraction)}</p> : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -164,6 +173,9 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         </ProfileSection>
         <ProfileSection icon={UsersRound} title="Relationships">
           <RelationshipManager currentPerson={person} people={people} relationships={relationships} onChange={setRelationships} />
+        </ProfileSection>
+        <ProfileSection icon={MessageCircle} title="Interactions">
+          <InteractionManager personId={person.id} interactions={interactions} onChange={setInteractions} />
         </ProfileSection>
         <ProfileSection icon={Library} title="Memories" actionHref={`/memories/new?personId=${person.id}`} actionLabel="Add">
           {memories.map((memory) => (
