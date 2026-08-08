@@ -1,13 +1,9 @@
-export type GooglePhotosConnectionState = "not-connected" | "permission-required" | "connected";
+import type { GoogleIntegrationStatus } from "@/services/google/integration-status";
 
-export type GooglePhotosIntegrationStatus = {
-  state: GooglePhotosConnectionState;
-  label: string;
-};
-
-export function getGooglePhotosIntegrationStatus(): GooglePhotosIntegrationStatus {
+export function getGooglePhotosIntegrationStatus(): GoogleIntegrationStatus {
   return {
-    state: "not-connected",
-    label: "Google Photos is not connected",
+    state: "permission-required",
+    label: "Google Photos needs permission",
+    detail: "Photo references are supported, but Google Photos access is intentionally separate from sign-in.",
   };
 }

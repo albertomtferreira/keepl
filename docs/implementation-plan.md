@@ -334,16 +334,24 @@ Acceptance criteria:
 
 ## Phase 8: Settings and Integration Boundaries
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Build Settings page sections: Account, Google, Contacts, Photos, Calendar, Notifications, Privacy, Data.
-- [ ] Show connected Google account details.
-- [ ] Add Google Contacts service boundary.
-- [ ] Add Google Photos service boundary.
-- [ ] Represent integrations as Connected, Not connected, or Permission required.
-- [ ] Do not request Contacts, Photos, or Calendar permissions during initial sign-in.
+- [x] Build Settings page sections: Account, Google, Contacts, Photos, Calendar, Notifications, Privacy, Data.
+- [x] Show connected Google account details.
+- [x] Add Google Contacts service boundary.
+- [x] Add Google Photos service boundary.
+- [x] Represent integrations as Connected, Not connected, or Permission required.
+- [x] Do not request Contacts, Photos, or Calendar permissions during initial sign-in.
+
+Implementation notes:
+
+- Settings now renders account details from the authenticated Firebase user.
+- Google sign-in is shown as connected only when the current user has a `google.com` provider.
+- Contacts and Photos have typed service-boundary status helpers and return Permission required until a future connection flow exists.
+- Calendar and notification permissions are represented as future progressive-permission states.
+- Firebase Google sign-in remains limited to basic sign-in and does not add Contacts, Photos, or Calendar scopes.
 
 Acceptance criteria:
 
@@ -421,3 +429,5 @@ Start with Phase 5:
 
 ## Improvements
 - The user should be able to set a relationship with the created person
+- Upcoming birthdays on home
+- Settings - Contacts/Photos/Calendar/Notifications - Implement
