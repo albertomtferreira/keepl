@@ -11,31 +11,39 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
 import { peopleRepository } from "@/repositories/people";
 import { getGooglePhotosIntegrationStatus } from "@/services/google/photos";
 import type { Memory, Person } from "@/types";
 import { dateInputValue } from "./memory-format";
 
-const memorySchema = z
-  .object({
-    title: z.string().trim().min(1, "Title is required"),
-    startDate: z.string().min(1, "Start date is required"),
+function createMemorySchema(messages = {
+  titleRequired: "Title is required",
+  startDateRequired: "Start date is required",
+  endDateAfterStart: "End date must be after the start date",
+}) {
+  return z
+    .object({
+    title: z.string().trim().min(1, messages.titleRequired),
+    startDate: z.string().min(1, messages.startDateRequired),
     endDate: z.string().optional(),
     location: z.string().trim().optional(),
     description: z.string().trim().optional(),
     tags: z.string().trim().optional(),
   })
   .refine((values) => !values.endDate || values.endDate >= values.startDate, {
-    message: "End date must be after the start date",
+    message: messages.endDateAfterStart,
     path: ["endDate"],
   });
+}
 
-type MemoryFormValues = z.infer<typeof memorySchema>;
+type MemoryFormValues = z.infer<ReturnType<typeof createMemorySchema>>;
 
 export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; preselectedPersonId?: string }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>(memory?.peopleIds ?? (preselectedPersonId ? [preselectedPersonId] : []));
   const [personQuery, setPersonQuery] = useState("");
@@ -59,12 +67,22 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
     );
   }, [people, personQuery]);
 
+  const localizedMemorySchema = useMemo(
+    () =>
+      createMemorySchema({
+        titleRequired: t("memoryForm", "validationTitle"),
+        startDateRequired: t("memoryForm", "validationStartDate"),
+        endDateAfterStart: t("memoryForm", "validationEndDate"),
+      }),
+    [t],
+  );
+
   const {
     formState: { errors },
     handleSubmit,
     register,
   } = useForm<MemoryFormValues>({
-    resolver: zodResolver(memorySchema),
+    resolver: zodResolver(localizedMemorySchema),
     values: {
       title: memory?.title ?? "",
       startDate: dateInputValue(memory?.startDate),
@@ -81,7 +99,7 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
 
   async function onSubmit(values: MemoryFormValues) {
     if (!user) {
-      setFormError("Sign in again before saving.");
+      setFormError(t("memoryForm", "signInSave"));
       return;
     }
 
@@ -108,7 +126,7 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
         router.push(`/memories/${id}`);
       }
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Could not save this memory.");
+      setFormError(error instanceof Error ? error.message : t("memoryForm", "saveError"));
     } finally {
       setSaving(false);
     }
@@ -117,36 +135,36 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Title" error={errors.title?.message}>
+        <Field label={t("memoryForm", "title")} error={errors.title?.message}>
           <input className={inputClassName} {...register("title")} />
         </Field>
-        <Field label="Location" error={errors.location?.message}>
+        <Field label={t("memoryForm", "location")} error={errors.location?.message}>
           <input className={inputClassName} {...register("location")} />
         </Field>
-        <Field label="Start date" error={errors.startDate?.message}>
+        <Field label={t("memoryForm", "startDate")} error={errors.startDate?.message}>
           <input className={inputClassName} type="date" {...register("startDate")} />
         </Field>
-        <Field label="End date" error={errors.endDate?.message}>
+        <Field label={t("memoryForm", "endDate")} error={errors.endDate?.message}>
           <input className={inputClassName} type="date" {...register("endDate")} />
         </Field>
       </div>
 
-      <Field label="Description" error={errors.description?.message}>
+      <Field label={t("memoryForm", "description")} error={errors.description?.message}>
         <textarea className={`${inputClassName} min-h-28 py-2`} {...register("description")} />
       </Field>
 
-      <Field label="Tags" hint="Separate tags with commas." error={errors.tags?.message}>
-        <input className={inputClassName} placeholder="holiday, birthday, Porto" {...register("tags")} />
+      <Field label={t("memoryForm", "tags")} hint={t("memoryForm", "tagsHint")} error={errors.tags?.message}>
+        <input className={inputClassName} placeholder={t("memoryForm", "tagsPlaceholder")} {...register("tags")} />
       </Field>
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-medium">People</h2>
-          <p className="text-xs text-muted-foreground">Connect this memory to everyone who was part of it.</p>
+          <h2 className="text-sm font-medium">{t("memoryForm", "people")}</h2>
+          <p className="text-xs text-muted-foreground">{t("memoryForm", "peopleHint")}</p>
         </div>
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder="Search people" className={`${inputClassName} pl-9`} />
+          <input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder={t("memoryForm", "searchPeople")} className={`${inputClassName} pl-9`} />
         </label>
         <div className="grid max-h-64 gap-2 overflow-auto rounded-lg border bg-white p-2">
           {filteredPeople.length ? (
@@ -157,7 +175,7 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
               </label>
             ))
           ) : (
-            <p className="p-3 text-sm text-muted-foreground">No people found.</p>
+            <p className="p-3 text-sm text-muted-foreground">{t("memoryForm", "noPeopleFound")}</p>
           )}
         </div>
       </section>
@@ -166,8 +184,10 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
         <div className="flex items-start gap-3">
           <PhotoIcon className="mt-0.5 size-4 text-muted-foreground" aria-hidden="true" />
           <div>
-            <h2 className="text-sm font-medium">Photos</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{photosStatus.label}. Photo references can be added after the Google Photos integration is connected.</p>
+            <h2 className="text-sm font-medium">{t("memoryForm", "photos")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {photosStatus.state === "permission-required" ? t("memoryForm", "photosPermissionRequired") : photosStatus.label}. {t("memoryForm", "photosHint")}
+            </p>
           </div>
         </div>
       </section>
@@ -178,12 +198,12 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
         <Button asChild variant="ghost">
           <Link href={memory ? `/memories/${memory.id}` : "/memories"}>
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Back
+            {t("common", "back")}
           </Link>
         </Button>
         <Button type="submit" disabled={saving}>
           <Save className="size-4" aria-hidden="true" />
-          {saving ? "Saving" : "Save memory"}
+          {saving ? t("common", "saving") : t("memoryForm", "saveMemory")}
         </Button>
       </div>
     </form>

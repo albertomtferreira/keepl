@@ -1,6 +1,9 @@
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
+import { defaultLocale } from "@/lib/i18n/config";
+import { formatDate } from "@/lib/i18n/format";
 import type { Interaction, InteractionKind } from "@/types";
+import type { Locale } from "@/types/i18n";
 
 export const interactionKindLabels: Record<InteractionKind, string> = {
   call: "Call",
@@ -11,8 +14,8 @@ export const interactionKindLabels: Record<InteractionKind, string> = {
   other: "Other",
 };
 
-export function formatInteractionDate(interaction: Pick<Interaction, "occurredAt">) {
-  return format(interaction.occurredAt.toDate(), "MMM d, yyyy");
+export function formatInteractionDate(interaction: Pick<Interaction, "occurredAt">, locale: Locale = defaultLocale) {
+  return formatDate(interaction.occurredAt.toDate(), locale);
 }
 
 export function formatLastInteraction(interaction: Pick<Interaction, "occurredAt">) {

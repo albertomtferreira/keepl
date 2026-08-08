@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { interactionKindLabels, formatInteractionDate } from "@/features/interactions/interaction-format";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { interactionsRepository } from "@/repositories/interactions";
 import type { Interaction, InteractionKind } from "@/types";
 
@@ -22,6 +23,7 @@ export function InteractionManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const { locale } = useI18n();
   const [kind, setKind] = useState<InteractionKind>("message");
   const [summary, setSummary] = useState("");
   const [occurredAt, setOccurredAt] = useState(() => new Date().toISOString().slice(0, 10));
@@ -94,7 +96,7 @@ export function InteractionManager({
               <MessageCircle className="mt-0.5 size-4 text-muted-foreground" aria-hidden="true" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">
-                  {interactionKindLabels[interaction.kind]} <span className="font-normal text-muted-foreground">{formatInteractionDate(interaction)}</span>
+                  {interactionKindLabels[interaction.kind]} <span className="font-normal text-muted-foreground">{formatInteractionDate(interaction, locale)}</span>
                 </p>
                 {interaction.summary ? <p className="mt-1 text-sm text-muted-foreground">{interaction.summary}</p> : null}
               </div>

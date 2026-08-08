@@ -588,21 +588,21 @@ Acceptance criteria:
 
 ## Recommended Implementation Order
 
-1. Natural-language search.
-2. Multi-language support for English, Portuguese, French, and Spanish.
-3. Relationship graph visualization.
-4. Export/import.
-5. Google Photos Picker.
-6. Google Calendar integration.
-7. Selected Google Contacts import, then full synchronization.
-8. Smart reminders.
-9. AI natural-language data entry.
-10. AI extraction from notes.
-11. Semantic memory search.
-12. Additional photo providers.
-13. Facebook and Instagram enhanced APIs.
-14. Encrypted private fields.
-15. Multi-user and shared memories.
+1. Natural-language search. (FT 1)
+2. Multi-language support for English, Portuguese, French, and Spanish. (FT 2)
+3. Relationship graph visualization. (FT 12)
+4. Export/import. (FT 14)
+5. Google Photos Picker. (FT 9)
+6. Google Calendar integration. (FT 7)
+7. Selected Google Contacts import, then full synchronization. (FT 8)
+8. Smart reminders. (FT 6)
+9. AI natural-language data entry. (FT 4)
+10. AI extraction from notes. (FT 5)
+11. Semantic memory search. (FT 3)
+12. Additional photo providers. (FT 10)
+13. Facebook and Instagram enhanced APIs. (FT 11)
+14. Encrypted private fields. (FT 15)
+15. Multi-user and shared memories. (FT 13)
 
 This order favors user value with low privacy risk first, then localization before more UI-heavy feature work, then integrations, then AI, then features that require deeper security architecture.
 
@@ -625,3 +625,7 @@ Use this checklist before marking any deferred feature complete.
 - [ ] `npm run typecheck` passes.
 - [ ] `npm test` passes where tests exist.
 - [ ] `npm run build` passes.
+
+
+## Further features
+- Improve the label structure from memories to mirror the structure used on the people group labels 

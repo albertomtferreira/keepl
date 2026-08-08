@@ -7,12 +7,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MemoryCard } from "@/features/memories/memory-card";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
 import { peopleRepository } from "@/repositories/people";
 import type { Memory, Person } from "@/types";
 
 export function MemoriesListClient() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [query, setQuery] = useState("");
@@ -37,14 +39,14 @@ export function MemoriesListClient() {
         setMemories(memoriesResult);
         setPeople(peopleResult);
       } catch {
-        setError("Could not load memories.");
+        setError(t("memoriesPage", "loadError"));
       } finally {
         setLoading(false);
       }
     }
 
     void loadMemories();
-  }, [user]);
+  }, [t, user]);
 
   const filteredMemories = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -76,14 +78,14 @@ export function MemoriesListClient() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search memories"
+            placeholder={t("memoriesPage", "searchPlaceholder")}
             className="h-10 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
         <Button asChild>
           <Link href="/memories/new">
             <Plus className="size-4" aria-hidden="true" />
-            Add memory
+            {t("memoriesPage", "addMemory")}
           </Link>
         </Button>
       </div>
@@ -91,7 +93,7 @@ export function MemoriesListClient() {
       {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">Loading memories...</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("memoriesPage", "loading")}</div>
       ) : filteredMemories.length ? (
         <div className="grid gap-3">
           {filteredMemories.map((memory) => (
@@ -102,9 +104,9 @@ export function MemoriesListClient() {
         <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed bg-white/70 p-8 text-center">
           <div>
             <Library className="mx-auto mb-3 size-5 text-muted-foreground" aria-hidden="true" />
-            <h2 className="font-semibold">{memories.length ? "No matches" : "Add your first memory"}</h2>
+            <h2 className="font-semibold">{memories.length ? t("memoriesPage", "noMatches") : t("memoriesPage", "addFirstMemory")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {memories.length ? "Try another search." : "Capture a moment and connect it to the people who were there."}
+              {memories.length ? t("memoriesPage", "tryAnotherSearch") : t("memoriesPage", "firstMemoryHint")}
             </p>
           </div>
         </div>

@@ -6,9 +6,11 @@ import Link from "next/link";
 import { AppNav } from "@/components/layout/app-nav";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { signOutUser, user } = useAuth();
+  const { t } = useI18n();
 
   return (
     <div className="flex min-h-dvh bg-[#fbfaf7] text-foreground">
@@ -22,12 +24,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {user?.displayName || user?.email}
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label="Settings">
+            <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label={t("app", "settings")}>
               <Link href="/settings">
                 <Settings className="size-4" aria-hidden="true" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" onClick={signOutUser} aria-label="Sign out">
+            <Button variant="ghost" size="icon" onClick={signOutUser} aria-label={t("app", "signOut")}>
               <LogOut className="size-4" aria-hidden="true" />
             </Button>
           </div>

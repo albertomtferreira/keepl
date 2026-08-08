@@ -3,6 +3,7 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
+  updateDoc,
   type Firestore,
   type WithFieldValue,
 } from "firebase/firestore";
@@ -46,6 +47,20 @@ export class UserProfilesRepository {
       } as WithFieldValue<FirestoreEntityData<UserProfile>>,
       { merge: true },
     );
+  }
+
+  async updateLocale(userId: string, locale: string) {
+    const existing = await this.get(userId);
+
+    if (!existing) {
+      return;
+    }
+
+    await updateDoc(this.ref(userId), {
+      locale,
+      ownerId: userId,
+      updatedAt: serverTimestamp(),
+    });
   }
 
   private ref(userId: string) {

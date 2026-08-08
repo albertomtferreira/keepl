@@ -5,6 +5,7 @@ import {
   type UpcomingDateGroup,
 } from "@/lib/dates/flexible-date";
 import type { ImportantDate, Person } from "@/types";
+import type { Locale } from "@/types/i18n";
 
 export type UpcomingItem = {
   id: string;
@@ -15,11 +16,11 @@ export type UpcomingItem = {
   group: UpcomingDateGroup;
 };
 
-export function buildUpcomingItems(importantDates: ImportantDate[], people: Person[], from: Date): UpcomingItem[] {
+export function buildUpcomingItems(importantDates: ImportantDate[], people: Person[], from: Date, locale?: Locale): UpcomingItem[] {
   const dateItems = buildUpcomingDates(importantDates, people, from).map((date) => ({
     id: date.importantDate.id,
     title: date.importantDate.title,
-    dateLabel: formatFlexibleDate(date.importantDate.date),
+    dateLabel: formatFlexibleDate(date.importantDate.date, locale),
     person: date.person,
     daysUntil: date.daysUntil,
     group: date.group,
@@ -43,7 +44,7 @@ export function buildUpcomingItems(importantDates: ImportantDate[], people: Pers
       {
         id: `person-birthday-${person.id}`,
         title: "Birthday",
-        dateLabel: formatFlexibleDate(person.birthday),
+        dateLabel: formatFlexibleDate(person.birthday, locale),
         person,
         daysUntil,
         group: getUpcomingGroup(daysUntil),

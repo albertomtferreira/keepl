@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
 import { peopleRepository } from "@/repositories/people";
 import type { Group, Person } from "@/types";
@@ -14,6 +15,7 @@ import { getPersonInitials, groupNamesForPerson } from "./person-format";
 
 export function PeopleListClient() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const [people, setPeople] = useState<Person[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -38,14 +40,14 @@ export function PeopleListClient() {
         setPeople(peopleResult);
         setGroups(groupsResult);
       } catch {
-        setError("Could not load people.");
+        setError(t("peoplePage", "loadError"));
       } finally {
         setLoading(false);
       }
     }
 
     void loadPeople();
-  }, [user]);
+  }, [t, user]);
 
   const filteredPeople = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -68,7 +70,7 @@ export function PeopleListClient() {
   }, [groupId, people, query]);
 
   async function archivePerson(person: Person) {
-    if (!user || !confirm(`Archive ${person.displayName}?`)) {
+    if (!user || !confirm(t("peoplePage", "archiveConfirm", { name: person.displayName }))) {
       return;
     }
 
@@ -84,14 +86,14 @@ export function PeopleListClient() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search people"
+            placeholder={t("peoplePage", "searchPlaceholder")}
             className="h-10 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
         <Button asChild className="w-full gap-2 sm:w-auto">
           <Link href="/people/new">
             <Plus className="size-4" aria-hidden="true" />
-            Add person
+            {t("peoplePage", "addPerson")}
           </Link>
         </Button>
         <select
@@ -99,7 +101,7 @@ export function PeopleListClient() {
           onChange={(event) => setGroupId(event.target.value)}
           className="h-10 rounded-lg border bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
         >
-          <option value="all">All groups</option>
+          <option value="all">{t("peoplePage", "allGroups")}</option>
           {groups.map((group) => (
             <option key={group.id} value={group.id}>
               {group.name}
@@ -111,7 +113,7 @@ export function PeopleListClient() {
       {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">Loading people...</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("peoplePage", "loading")}</div>
       ) : filteredPeople.length ? (
         <div className="grid gap-2">
           {filteredPeople.map((person) => {
@@ -126,7 +128,7 @@ export function PeopleListClient() {
                   <div className="min-w-0">
                     <h2 className="truncate font-semibold">{person.displayName}</h2>
                     <p className="truncate text-sm text-muted-foreground">
-                      {groupNames.length ? groupNames.join(", ") : person.emails?.[0]?.value ?? person.phoneNumbers?.[0]?.value ?? "No details yet"}
+                      {groupNames.length ? groupNames.join(", ") : person.emails?.[0]?.value ?? person.phoneNumbers?.[0]?.value ?? t("peoplePage", "noDetailsYet")}
                     </p>
                   </div>
                 </Link>
@@ -134,8 +136,8 @@ export function PeopleListClient() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  title="Archive"
-                  aria-label={`Archive ${person.displayName}`}
+                  title={t("peoplePage", "archive")}
+                  aria-label={t("peoplePage", "archivePerson", { name: person.displayName })}
                   onClick={() => archivePerson(person)}
                 >
                   <Archive className="size-4" aria-hidden="true" />
@@ -148,15 +150,15 @@ export function PeopleListClient() {
         <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed bg-white/70 p-8 text-center">
           <div>
             <UsersRound className="mx-auto mb-3 size-5 text-muted-foreground" aria-hidden="true" />
-            <h2 className="font-semibold">{people.length ? "No matches" : "Add your first person"}</h2>
+            <h2 className="font-semibold">{people.length ? t("peoplePage", "noMatches") : t("peoplePage", "addFirstPerson")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {people.length ? "Try another search or group." : "Start with a name and add details when they matter."}
+              {people.length ? t("peoplePage", "tryAnotherSearch") : t("peoplePage", "firstPersonHint")}
             </p>
             {!people.length ? (
               <Button asChild className="mt-4">
                 <Link href="/people/new">
                   <Plus className="size-4" aria-hidden="true" />
-                  Add person
+                  {t("peoplePage", "addPerson")}
                 </Link>
               </Button>
             ) : null}

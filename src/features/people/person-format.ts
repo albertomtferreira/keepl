@@ -1,4 +1,7 @@
 import type { FlexibleDate, Group, Person } from "@/types";
+import type { Locale } from "@/types/i18n";
+import { defaultLocale } from "@/lib/i18n/config";
+import { formatDate, formatMonthDay } from "@/lib/i18n/format";
 
 export function getPersonInitials(person: Pick<Person, "displayName" | "firstName" | "lastName">) {
   const initials = [person.firstName, person.lastName]
@@ -9,15 +12,14 @@ export function getPersonInitials(person: Pick<Person, "displayName" | "firstNam
   return (initials || person.displayName.trim().charAt(0) || "?").toUpperCase();
 }
 
-export function formatBirthday(date?: FlexibleDate) {
+export function formatBirthday(date?: FlexibleDate, locale: Locale = defaultLocale) {
   if (!date?.month || !date.day) {
     return null;
   }
 
-  const month = String(date.month).padStart(2, "0");
-  const day = String(date.day).padStart(2, "0");
+  const birthday = new Date(date.year ?? 2000, date.month - 1, date.day);
 
-  return date.year ? `${date.year}-${month}-${day}` : `${month}-${day}`;
+  return date.year ? formatDate(birthday, locale, { dateStyle: "long" }) : formatMonthDay(birthday, locale);
 }
 
 export function birthdayInputValue(date?: FlexibleDate) {

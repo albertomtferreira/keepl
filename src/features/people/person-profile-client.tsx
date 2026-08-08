@@ -27,6 +27,7 @@ import { ImportantDateManager } from "@/features/important-dates/important-date-
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
 import { RelationshipManager } from "@/features/relationships/relationship-manager";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
 import { importantDatesRepository } from "@/repositories/important-dates";
 import { interactionsRepository } from "@/repositories/interactions";
@@ -40,6 +41,7 @@ import { formatBirthday, getPersonInitials, groupNamesForPerson } from "./person
 export function PersonProfileClient({ personId }: { personId: string }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { locale } = useI18n();
   const [person, setPerson] = useState<Person | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -163,7 +165,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         <ProfileSection icon={UsersRound} title="About" actionHref={`/people/${person.id}/edit`} actionLabel="Edit">
           <Detail icon={Phone} value={person.phoneNumbers?.[0]?.value} />
           <Detail icon={Mail} value={person.emails?.[0]?.value} />
-          <Detail icon={CalendarHeart} label="Birthday" value={formatBirthday(person.birthday)} />
+          <Detail icon={CalendarHeart} label="Birthday" value={formatBirthday(person.birthday, locale)} />
         </ProfileSection>
         <ProfileSection icon={CalendarHeart} title="Important Dates">
           <ImportantDateManager dates={importantDates} onChange={setImportantDates} personId={person.id} />

@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/layout/page-header";
+import { LocalizedPageHeader } from "@/components/layout/localized-page-header";
 import { MemoriesListClient } from "@/features/memories/memories-list-client";
 
 export const metadata = {
@@ -8,10 +8,7 @@ export const metadata = {
 export default function MemoriesPage() {
   return (
     <>
-      <PageHeader
-        title="Memories"
-        description="Shared moments will collect here, connected back to the people who were part of them."
-      />
+      <LocalizedPageHeader page="memories" />
       <MemoriesListClient />
     </>
   );

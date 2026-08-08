@@ -9,8 +9,9 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { suggestedGroupNames } from "@/features/groups/group-suggestions";
-import { personSchema, type PersonFormValues } from "@/features/people/person-validation";
+import { createPersonSchema, type PersonFormValues } from "@/features/people/person-validation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
 import { peopleRepository } from "@/repositories/people";
 import type { Group, Person } from "@/types";
@@ -23,6 +24,7 @@ type PersonFormProps = {
 export function PersonForm({ person }: PersonFormProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(person?.groupIds ?? []);
   const [newGroupName, setNewGroupName] = useState("");
@@ -42,6 +44,15 @@ export function PersonForm({ person }: PersonFormProps) {
 
     return suggestedGroupNames.filter((name) => !existing.has(name.toLowerCase()));
   }, [groups]);
+
+  const personSchema = useMemo(
+    () =>
+      createPersonSchema({
+        firstNameRequired: t("personForm", "validationFirstName"),
+        validEmail: t("personForm", "validationEmail"),
+      }),
+    [t],
+  );
 
   const {
     formState: { errors },
@@ -65,7 +76,7 @@ export function PersonForm({ person }: PersonFormProps) {
 
   async function createGroup(name: string) {
     if (!user) {
-      setFormError("Sign in again before adding a group.");
+      setFormError(t("personForm", "signInAddGroup"));
       return;
     }
 
@@ -96,7 +107,7 @@ export function PersonForm({ person }: PersonFormProps) {
 
   async function onSubmit(values: PersonFormValues) {
     if (!user) {
-      setFormError("Sign in again before saving.");
+      setFormError(t("personForm", "signInSave"));
       return;
     }
 
@@ -132,7 +143,7 @@ export function PersonForm({ person }: PersonFormProps) {
         router.push(`/people/${id}`);
       }
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Could not save this person.");
+      setFormError(error instanceof Error ? error.message : t("personForm", "saveError"));
     } finally {
       setSaving(false);
     }
@@ -141,30 +152,30 @@ export function PersonForm({ person }: PersonFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="First name" error={errors.firstName?.message}>
+        <Field label={t("personForm", "firstName")} error={errors.firstName?.message}>
           <input className={inputClassName} autoComplete="given-name" {...register("firstName")} />
         </Field>
-        <Field label="Last name" error={errors.lastName?.message}>
+        <Field label={t("personForm", "lastName")} error={errors.lastName?.message}>
           <input className={inputClassName} autoComplete="family-name" {...register("lastName")} />
         </Field>
-        <Field label="Nickname" error={errors.nickname?.message}>
+        <Field label={t("personForm", "nickname")} error={errors.nickname?.message}>
           <input className={inputClassName} {...register("nickname")} />
         </Field>
-        <Field label="Birthday" error={errors.birthday?.message}>
+        <Field label={t("personForm", "birthday")} error={errors.birthday?.message}>
           <input className={inputClassName} type="date" {...register("birthday")} />
         </Field>
-        <Field label="Phone" error={errors.phone?.message}>
+        <Field label={t("personForm", "phone")} error={errors.phone?.message}>
           <input className={inputClassName} type="tel" autoComplete="tel" {...register("phone")} />
         </Field>
-        <Field label="Email" error={errors.email?.message}>
+        <Field label={t("personForm", "email")} error={errors.email?.message}>
           <input className={inputClassName} type="email" autoComplete="email" {...register("email")} />
         </Field>
       </div>
 
       <div className="space-y-3 rounded-lg border bg-white p-4">
         <div>
-          <h2 className="text-sm font-medium">Groups</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Choose any groups that fit, or add your own.</p>
+          <h2 className="text-sm font-medium">{t("personForm", "groups")}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{t("personForm", "groupsHint")}</p>
         </div>
         {groups.length ? (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -180,15 +191,15 @@ export function PersonForm({ person }: PersonFormProps) {
           <div className="flex flex-wrap gap-2">
             {suggestedGroupsToCreate.map((name) => (
               <Button key={name} type="button" variant="outline" size="sm" onClick={() => createGroup(name)}>
-                Add {name}
+                {t("personForm", "addSuggestedGroup", { name })}
               </Button>
             ))}
           </div>
         ) : null}
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-          <input value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} className={inputClassName} placeholder="New group name" />
+          <input value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} className={inputClassName} placeholder={t("personForm", "newGroupName")} />
           <Button type="button" variant="outline" onClick={() => createGroup(newGroupName)}>
-            Add group
+            {t("personForm", "addGroup")}
           </Button>
         </div>
       </div>
@@ -199,12 +210,12 @@ export function PersonForm({ person }: PersonFormProps) {
         <Button asChild variant="ghost">
           <Link href={person ? `/people/${person.id}` : "/people"}>
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Back
+            {t("common", "back")}
           </Link>
         </Button>
         <Button type="submit" disabled={saving}>
           <Save className="size-4" aria-hidden="true" />
-          {saving ? "Saving" : "Save person"}
+          {saving ? t("common", "saving") : t("common", "savePerson")}
         </Button>
       </div>
     </form>

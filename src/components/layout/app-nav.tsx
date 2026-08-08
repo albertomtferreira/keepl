@@ -13,18 +13,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 
 const primaryNav = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/people", label: "People", icon: UsersRound },
-  { href: "/memories", label: "Memories", icon: Library },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/upcoming", label: "Upcoming", icon: CalendarDays },
-];
+  { href: "/home", labelKey: "home", icon: Home },
+  { href: "/people", labelKey: "people", icon: UsersRound },
+  { href: "/memories", labelKey: "memories", icon: Library },
+  { href: "/search", labelKey: "search", icon: Search },
+  { href: "/upcoming", labelKey: "upcoming", icon: CalendarDays },
+] as const;
+
+type NavItem = (typeof primaryNav)[number] | { href: "/settings"; labelKey: "settings"; icon: typeof Settings };
 
 export function AppNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <>
@@ -40,12 +44,12 @@ export function AppNav() {
         <Button asChild className="mt-6 justify-start gap-2">
           <Link href="/people/new">
             <Plus className="size-4" aria-hidden="true" />
-            Add
+            {t("nav", "add")}
           </Link>
         </Button>
         <div className="mt-auto">
           <NavLink
-            item={{ href: "/settings", label: "Settings", icon: Settings }}
+            item={{ href: "/settings", labelKey: "settings", icon: Settings }}
             active={pathname.startsWith("/settings")}
           />
         </div>
@@ -64,7 +68,7 @@ export function AppNav() {
             )}
           >
             <item.icon className="size-4" aria-hidden="true" />
-            {item.label}
+            {t("nav", item.labelKey)}
           </Link>
         ))}
       </nav>
@@ -76,9 +80,11 @@ function NavLink({
   item,
   active,
 }: {
-  item: (typeof primaryNav)[number];
+  item: NavItem;
   active: boolean;
 }) {
+  const { t } = useI18n();
+
   return (
     <Link
       href={item.href}
@@ -88,7 +94,7 @@ function NavLink({
       )}
     >
       <item.icon className="size-4" aria-hidden="true" />
-      {item.label}
+      {t("nav", item.labelKey)}
     </Link>
   );
 }

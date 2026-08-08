@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/layout/page-header";
+import { LocalizedPageHeader } from "@/components/layout/localized-page-header";
 import { HomeClient } from "@/features/home/home-client";
 
 export const metadata = {
@@ -8,10 +8,7 @@ export const metadata = {
 export default function HomePage() {
   return (
     <>
-      <PageHeader
-        title="Home"
-        description="A quiet place for the people, dates, and memories worth keeping close."
-      />
+      <LocalizedPageHeader page="home" />
       <HomeClient />
     </>
   );

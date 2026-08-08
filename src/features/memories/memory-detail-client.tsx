@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
 import { peopleRepository } from "@/repositories/people";
 import { getGooglePhotosIntegrationStatus } from "@/services/google/photos";
@@ -16,6 +17,7 @@ import { formatMemoryDate, memoryPeopleNames } from "./memory-format";
 export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { locale } = useI18n();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="size-4" aria-hidden="true" />
-                {formatMemoryDate(memory)}
+                {formatMemoryDate(memory, locale)}
               </span>
               {memory.location ? (
                 <span className="inline-flex items-center gap-1">

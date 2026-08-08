@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import {
   flexibleDateFromInput,
   flexibleDateInputValue,
@@ -47,6 +48,7 @@ export function ImportantDateManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const { locale } = useI18n();
   const [today] = useState(() => new Date());
   const [editing, setEditing] = useState<ImportantDate | "new" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -138,8 +140,8 @@ export function ImportantDateManager({
               <div>
                 <p className="font-medium">{date.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatFlexibleDate(date.date)}
-                  {daysUntil !== null ? ` · ${formatRelativeDateLabel(daysUntil)}` : ""}
+                  {formatFlexibleDate(date.date, locale)}
+                  {daysUntil !== null ? ` · ${formatRelativeDateLabel(daysUntil, locale)}` : ""}
                 </p>
                 {date.notes ? <p className="mt-2 text-sm">{date.notes}</p> : null}
               </div>

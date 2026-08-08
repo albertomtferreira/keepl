@@ -3,14 +3,15 @@ import {
   differenceInCalendarDays,
   endOfMonth,
   endOfWeek,
-  format,
   isAfter,
   isBefore,
-  isToday,
   startOfDay,
 } from "date-fns";
 
+import { defaultLocale } from "@/lib/i18n/config";
+import { formatDate, formatMonthDay, formatRelativeTime } from "@/lib/i18n/format";
 import type { FlexibleDate, ImportantDate, Person } from "@/types";
+import type { Locale } from "@/types/i18n";
 
 export type UpcomingDate = {
   importantDate: ImportantDate;
@@ -45,13 +46,13 @@ export function flexibleDateInputValue(date?: FlexibleDate) {
   return `${year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 
-export function formatFlexibleDate(date?: FlexibleDate) {
+export function formatFlexibleDate(date?: FlexibleDate, locale: Locale = defaultLocale) {
   if (!date?.month || !date.day) {
     return "Date not set";
   }
 
   const occurrence = new Date(date.year ?? 2000, date.month - 1, date.day);
-  return date.year ? format(occurrence, "PPP") : format(occurrence, "MMMM d");
+  return date.year ? formatDate(occurrence, locale, { dateStyle: "long" }) : formatMonthDay(occurrence, locale);
 }
 
 export function getNextAnnualOccurrence(date: FlexibleDate, from = new Date()) {
@@ -98,7 +99,15 @@ export function buildUpcomingDates(importantDates: ImportantDate[], people: Pers
     .sort((a, b) => a.nextOccurrence.getTime() - b.nextOccurrence.getTime());
 }
 
-export function formatRelativeDateLabel(daysUntil: number) {
+export function formatRelativeDateLabel(daysUntil: number, locale: Locale = defaultLocale) {
+  return titleCase(formatRelativeTime(daysUntil, locale));
+}
+
+function titleCase(value: string) {
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1);
+}
+
+export function formatRelativeDateLabelEnglish(daysUntil: number) {
   if (daysUntil === 0) {
     return "Today";
   }
@@ -120,7 +129,9 @@ function getOneTimeOccurrence(date: FlexibleDate, from: Date) {
 }
 
 function getUpcomingDateGroup(date: Date, from: Date): UpcomingDateGroup {
-  if (isToday(date)) {
+  const daysUntil = differenceInCalendarDays(date, from);
+
+  if (daysUntil === 0) {
     return "today";
   }
 

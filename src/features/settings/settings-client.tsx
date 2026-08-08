@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { LanguageSettings } from "@/features/localization/language-settings";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import {
   googleIntegrationStateLabels,
   type GoogleIntegrationStatus,
@@ -29,8 +31,8 @@ type SettingsSection = {
 
 const neutralStatus: GoogleIntegrationStatus = {
   state: "not-connected",
-  label: "Not connected",
-  detail: "This area is available in settings without any additional external connection.",
+  label: "",
+  detail: "",
 };
 
 const permissionStatus = (label: string, detail: string): GoogleIntegrationStatus => ({
@@ -47,60 +49,74 @@ const stateStyles = {
 
 export function SettingsClient() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const provider = user?.providerData.find((profile) => profile.providerId === "google.com");
   const googleStatus: GoogleIntegrationStatus = provider
     ? {
         state: "connected",
-        label: "Google account connected",
-        detail: "Sign-in is connected. Contacts, Photos, and Calendar permissions remain separate.",
+        label: t("settings", "googleConnected"),
+        detail: t("settings", "googleConnectedDetail"),
       }
     : {
         state: "not-connected",
-        label: "Google sign-in unavailable",
-        detail: "No Google provider is attached to the current account.",
+        label: t("settings", "googleUnavailable"),
+        detail: t("settings", "googleUnavailableDetail"),
       };
+  const localizedNeutralStatus = {
+    ...neutralStatus,
+    label: t("common", "notConnected"),
+    detail: t("settings", "neutralDetail"),
+  };
 
   const sections: SettingsSection[] = [
     {
-      title: "Google",
+      title: t("settings", "google"),
       icon: CheckCircle2,
       status: googleStatus,
     },
     {
-      title: "Contacts",
+      title: t("settings", "contacts"),
       icon: ContactRound,
-      status: getGoogleContactsIntegrationStatus(),
+      status: localizePermissionStatus(
+        getGoogleContactsIntegrationStatus(),
+        t("settings", "contactsPermission"),
+        t("settings", "contactsPermissionDetail"),
+      ),
     },
     {
-      title: "Photos",
+      title: t("settings", "photos"),
       icon: Camera,
-      status: getGooglePhotosIntegrationStatus(),
+      status: localizePermissionStatus(
+        getGooglePhotosIntegrationStatus(),
+        t("settings", "photosPermission"),
+        t("settings", "photosPermissionDetail"),
+      ),
     },
     {
-      title: "Calendar",
+      title: t("settings", "calendar"),
       icon: CalendarDays,
       status: permissionStatus(
-        "Google Calendar needs permission",
-        "Calendar reminders are planned, but calendar access is not requested during sign-in.",
+        t("settings", "calendarPermission"),
+        t("settings", "calendarPermissionDetail"),
       ),
     },
     {
-      title: "Notifications",
+      title: t("settings", "notifications"),
       icon: Bell,
       status: permissionStatus(
-        "Browser permission not requested",
-        "Reminder notifications will ask only when notification features are enabled.",
+        t("settings", "notificationPermission"),
+        t("settings", "notificationPermissionDetail"),
       ),
     },
     {
-      title: "Privacy",
+      title: t("settings", "privacy"),
       icon: LockKeyhole,
-      status: neutralStatus,
+      status: localizedNeutralStatus,
     },
     {
-      title: "Data",
+      title: t("settings", "data"),
       icon: Database,
-      status: neutralStatus,
+      status: localizedNeutralStatus,
     },
   ];
 
@@ -122,12 +138,14 @@ export function SettingsClient() {
             </div>
           )}
           <div className="min-w-0">
-            <h2 className="font-semibold">Account</h2>
-            <p className="mt-1 truncate text-sm">{user?.displayName || "Signed in"}</p>
+            <h2 className="font-semibold">{t("settings", "account")}</h2>
+            <p className="mt-1 truncate text-sm">{user?.displayName || t("common", "signedIn")}</p>
             <p className="mt-1 truncate text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
       </section>
+
+      <LanguageSettings />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.map((section) => (
@@ -139,10 +157,9 @@ export function SettingsClient() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
           <div>
-            <h2 className="font-semibold">Progressive permissions</h2>
+            <h2 className="font-semibold">{t("settings", "progressivePermissions")}</h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Keepl only uses Google sign-in right now. Contacts, Photos, Calendar, and notification
-              permissions are kept behind their own future connection steps.
+              {t("settings", "progressivePermissionsDetail")}
             </p>
           </div>
         </div>
@@ -151,7 +168,26 @@ export function SettingsClient() {
   );
 }
 
+function localizePermissionStatus(status: GoogleIntegrationStatus, label: string, detail: string): GoogleIntegrationStatus {
+  if (status.state !== "permission-required") {
+    return status;
+  }
+
+  return {
+    ...status,
+    label,
+    detail,
+  };
+}
+
 function IntegrationCard({ section }: { section: SettingsSection }) {
+  const { t } = useI18n();
+  const stateLabels = {
+    connected: t("common", "connected"),
+    "not-connected": t("common", "notConnected"),
+    "permission-required": t("common", "permissionRequired"),
+  };
+
   return (
     <section className="rounded-lg border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -165,7 +201,7 @@ function IntegrationCard({ section }: { section: SettingsSection }) {
           </div>
         </div>
         <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${stateStyles[section.status.state]}`}>
-          {googleIntegrationStateLabels[section.status.state]}
+          {stateLabels[section.status.state] ?? googleIntegrationStateLabels[section.status.state]}
         </span>
       </div>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">{section.status.detail}</p>

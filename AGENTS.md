@@ -7,3 +7,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Keepl Project Rules
+
+## Multi-Language Requirements
+
+Keepl supports English, Portuguese, French, and Spanish. All new user-facing UI must use the existing i18n structure rather than hard-coded display text.
+
+- Supported locales are `en`, `pt`, `fr`, and `es`, defined in `src/lib/i18n/config.ts`.
+- Translation messages live in:
+  - `src/lib/i18n/messages/en.json`
+  - `src/lib/i18n/messages/pt.json`
+  - `src/lib/i18n/messages/fr.json`
+  - `src/lib/i18n/messages/es.json`
+- Client components should read translations with `useI18n()` from `src/lib/i18n/i18n-context.tsx`.
+- Visible page headers in App Router pages should use `LocalizedPageHeader` from `src/components/layout/localized-page-header.tsx` when the header text must react to the selected client-side locale. Keep static route `metadata` simple and unchanged unless a server-side locale strategy is explicitly introduced.
+- New pages, features, forms, empty states, loading states, error states, button labels, tooltips, confirmation dialogs, aria labels, and validation messages must add keys to all four locale files.
+- Prefer feature namespaces such as `home`, `peoplePage`, `memoryForm`, `searchPage`, or `upcomingPage` over dumping unrelated text into `common`.
+- Use `common` only for genuinely shared labels such as `Back`, `Saving`, connection-state labels, or repeated generic actions.
+- User-owned data must not be translated or mutated during locale changes. Translate only UI chrome, labels, helper text, validation messages, status text, and formatting.
+- Dates, times, and relative labels should use the locale-aware helpers in `src/lib/i18n/format.ts` or existing date utilities that accept a locale.
+- For Zod or form validation, use a schema factory that accepts translated messages, following the pattern in the person and memory forms.
+- If provider/service helpers return English status text, localize it at the UI boundary unless the service itself has been redesigned to return translation keys.
+- Before finishing any UI feature, scan changed files for new hard-coded English user-facing strings and move them into the message files.
+- Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build` after localization-affecting changes.

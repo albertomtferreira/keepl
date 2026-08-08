@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { searchLocalRecords } from "@/lib/search/local-search";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import {
   groupsRepository,
   importantDatesRepository,
@@ -25,15 +26,32 @@ import {
 } from "@/repositories";
 import type { Group, ImportantDate, Interaction, Memory, Person, PersonNote, SearchResult, SearchScope } from "@/types";
 
-const scopes: { value: SearchScope; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "people", label: "People" },
-  { value: "notes", label: "Notes" },
-  { value: "memories", label: "Memories" },
-  { value: "dates", label: "Dates" },
-  { value: "interactions", label: "Interactions" },
-  { value: "groups", label: "Groups" },
+const scopes: { value: SearchScope; labelKey: "scopeAll" | "scopePeople" | "scopeNotes" | "scopeMemories" | "scopeDates" | "scopeInteractions" | "scopeGroups" }[] = [
+  { value: "all", labelKey: "scopeAll" },
+  { value: "people", labelKey: "scopePeople" },
+  { value: "notes", labelKey: "scopeNotes" },
+  { value: "memories", labelKey: "scopeMemories" },
+  { value: "dates", labelKey: "scopeDates" },
+  { value: "interactions", labelKey: "scopeInteractions" },
+  { value: "groups", labelKey: "scopeGroups" },
 ];
+
+type ResultTypeKey =
+  | "typePerson"
+  | "typeNote"
+  | "typeMemory"
+  | "typeDate"
+  | "typeInteraction"
+  | "typeGroup";
+
+const resultTypeKeys = {
+  person: "typePerson",
+  note: "typeNote",
+  memory: "typeMemory",
+  date: "typeDate",
+  interaction: "typeInteraction",
+  group: "typeGroup",
+} as const satisfies Record<SearchResult["type"], ResultTypeKey>;
 
 const resultIcons = {
   person: UsersRound,
@@ -46,6 +64,7 @@ const resultIcons = {
 
 export function SearchClient() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<SearchScope>("all");
   const [people, setPeople] = useState<Person[]>([]);
@@ -86,14 +105,14 @@ export function SearchClient() {
         setInteractions(interactionsResult);
         setGroups(groupsResult);
       } catch {
-        setError("Could not load search data.");
+        setError(t("searchPage", "loadError"));
       } finally {
         setLoading(false);
       }
     }
 
     void loadSearchData();
-  }, [user]);
+  }, [t, user]);
 
   const results = useMemo(
     () =>
@@ -122,7 +141,7 @@ export function SearchClient() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search names, notes, memories, dates, groups..."
+            placeholder={t("searchPage", "placeholder")}
             autoFocus
             className="h-11 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
@@ -139,7 +158,7 @@ export function SearchClient() {
                   : "bg-white text-muted-foreground hover:bg-muted"
               }`}
             >
-              {item.label}
+              {t("searchPage", item.labelKey)}
             </button>
           ))}
         </div>
@@ -148,9 +167,9 @@ export function SearchClient() {
       {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">Loading search...</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("searchPage", "loading")}</div>
       ) : !hasQuery ? (
-        <EmptyState title="What do you want to remember?" description="Try a name, nickname, group, note detail, place, tag, or upcoming date." />
+        <EmptyState title={t("searchPage", "emptyTitle")} description={t("searchPage", "emptyDescription")} />
       ) : results.length ? (
         <div className="grid gap-2">
           {results.map((result) => (
@@ -158,7 +177,7 @@ export function SearchClient() {
           ))}
         </div>
       ) : (
-        <EmptyState title="No matches" description="Try fewer words or switch the result type filter." />
+        <EmptyState title={t("searchPage", "noMatchesTitle")} description={t("searchPage", "noMatchesDescription")} />
       )}
     </div>
   );
@@ -166,6 +185,7 @@ export function SearchClient() {
 
 function ResultRow({ result }: { result: SearchResult }) {
   const Icon = resultIcons[result.type];
+  const { t } = useI18n();
 
   return (
     <Link href={result.href} className="flex items-start gap-3 rounded-lg border bg-white p-3 shadow-sm transition hover:bg-muted/50">
@@ -176,11 +196,11 @@ function ResultRow({ result }: { result: SearchResult }) {
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="truncate font-semibold">{result.title}</h2>
           <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium capitalize text-muted-foreground">
-            {result.type}
+            {t("searchPage", resultTypeKeys[result.type])}
           </span>
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {result.subtitle || `Matched ${result.matchedFields.join(", ")}`}
+          {result.subtitle || t("searchPage", "matched", { fields: result.matchedFields.join(", ") })}
         </p>
       </div>
     </Link>

@@ -1,10 +1,14 @@
+"use client";
+
 import { CalendarDays, MapPin, UsersRound } from "lucide-react";
 import Link from "next/link";
 
+import { useI18n } from "@/lib/i18n/i18n-context";
 import type { Memory, Person } from "@/types";
 import { formatMemoryDate, memoryPeopleNames } from "./memory-format";
 
 export function MemoryCard({ memory, people }: { memory: Memory; people: Person[] }) {
+  const { locale } = useI18n();
   const names = memoryPeopleNames(memory, people);
 
   return (
@@ -18,7 +22,7 @@ export function MemoryCard({ memory, people }: { memory: Memory; people: Person[
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="size-3.5" aria-hidden="true" />
-          {formatMemoryDate(memory)}
+          {formatMemoryDate(memory, locale)}
         </span>
         {memory.location ? (
           <span className="inline-flex items-center gap-1">

@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/layout/page-header";
+import { LocalizedPageHeader } from "@/components/layout/localized-page-header";
 import { PeopleListClient } from "@/features/people/people-list-client";
 
 export const metadata = {
@@ -8,10 +8,7 @@ export const metadata = {
 export default function PeoplePage() {
   return (
     <>
-      <PageHeader
-        title="People"
-        description="The people you want to remember, with profiles coming in the next phase."
-      />
+      <LocalizedPageHeader page="people" />
       <PeopleListClient />
     </>
   );

@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/layout/page-header";
+import { LocalizedPageHeader } from "@/components/layout/localized-page-header";
 import { SettingsClient } from "@/features/settings/settings-client";
 
 export const metadata = {
@@ -8,10 +8,7 @@ export const metadata = {
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Account and integration boundaries are here early, without requesting extra Google permissions."
-      />
+      <LocalizedPageHeader page="settings" />
       <SettingsClient />
     </>
   );
