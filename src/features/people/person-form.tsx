@@ -6,26 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { suggestedGroupNames } from "@/features/groups/group-suggestions";
+import { personSchema, type PersonFormValues } from "@/features/people/person-validation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { groupsRepository } from "@/repositories/groups";
 import { peopleRepository } from "@/repositories/people";
 import type { Group, Person } from "@/types";
 import { birthdayInputValue, parseBirthdayInput } from "./person-format";
-
-const personSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required"),
-  lastName: z.string().trim().optional(),
-  nickname: z.string().trim().optional(),
-  birthday: z.string().optional(),
-  phone: z.string().trim().optional(),
-  email: z.string().trim().email("Use a valid email").or(z.literal("")),
-});
-
-type PersonFormValues = z.infer<typeof personSchema>;
 
 type PersonFormProps = {
   person?: Person;

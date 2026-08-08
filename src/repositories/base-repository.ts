@@ -20,6 +20,7 @@ import {
 
 import { db as defaultDb } from "@/lib/firebase/client";
 import { createFirestoreConverter, type FirestoreEntityData } from "@/repositories/firestore-converter";
+import { isOwnedBy } from "@/repositories/ownership";
 import type { Entity, OwnedRecord, UserOwnedEntity } from "@/types";
 
 type OwnedEntity = Entity & OwnedRecord;
@@ -54,7 +55,7 @@ export class OwnedFirestoreRepository<T extends UserOwnedEntity> {
     const snapshot = await getDoc(this.docRef(id));
     const record = snapshot.exists() ? snapshot.data() : null;
 
-    if (!record || record.ownerId !== ownerId) {
+    if (!isOwnedBy(record, ownerId)) {
       return null;
     }
 

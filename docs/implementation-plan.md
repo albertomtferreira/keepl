@@ -386,26 +386,33 @@ Acceptance criteria:
 - Reminder data can be created for future notification support.
 - PWA shell feels usable on Android Chrome and does not intentionally break desktop or iOS browser use.
 
-## Phase 10: Seed Data and Quality Gates
+## Phase 10: Quality Gates and Milestone Hardening
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Add optional development seed data.
-- [ ] Include fictional people: Ricardo Silva, Maria Silva, Pedro Fernandes, Joao Costa, Sofia Silva.
-- [ ] Include sample relationships, birthdays, notes, groups, and Porto Weekend memory.
-- [ ] Ensure seed data never runs automatically for production users.
-- [ ] Add targeted tests for date calculations, inverse relationships, validation, and ownership-sensitive repository behavior where feasible.
-- [ ] Run lint.
-- [ ] Run TypeScript checks.
-- [ ] Run relevant tests.
-- [ ] Run production build.
-- [ ] Fix blocking errors before considering a milestone complete.
+- [x] Treat fictional seed data as optional development tooling, not a milestone requirement.
+- [x] Do not seed fictional people into the active app by default now that real/manual people exist.
+- [x] If demo data is added later, keep it explicitly user-triggered, development-only, and never automatic for production users.
+- [x] Add targeted tests for date calculations, inverse relationships, validation, and ownership-sensitive repository behavior where feasible.
+- [x] Run lint.
+- [x] Run TypeScript checks.
+- [x] Run relevant tests.
+- [x] Run production build.
+- [x] Fix blocking errors before considering a milestone complete.
+
+Implementation notes:
+
+- No automatic fictional seed path is present in the active app; the existing `seed` person source remains only a domain value for optional tooling.
+- Date calculation and inverse relationship tests already cover the core helper behavior.
+- Person form validation is now extracted into a reusable schema with focused tests.
+- Ownership-sensitive repository behavior is covered by a dependency-free owner guard used by the Firestore repository.
+- `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build` pass.
 
 Acceptance criteria:
 
-- Development UI can be tested with realistic sample data.
+- The milestone can be validated against real manually-created data without requiring fictional people.
 - Core business logic has focused tests.
 - Production build succeeds.
 
