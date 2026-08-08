@@ -150,25 +150,33 @@ Acceptance criteria:
 
 ## Phase 2: Domain Models and Data Access
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Define shared timestamp and ownership types.
-- [ ] Define `UserProfile`.
-- [ ] Define `Person` and `PersonSource`.
-- [ ] Define `PhotoReference` and `PhotoSource`.
-- [ ] Define `Relationship`.
-- [ ] Define `ImportantDate`.
-- [ ] Define `PersonNote`.
-- [ ] Define `Memory`.
-- [ ] Define `Group`.
-- [ ] Define `Interaction`.
-- [ ] Define `Reminder`.
-- [ ] Create typed Firestore converters or equivalent mapping helpers.
-- [ ] Create repository pattern for Firestore reads and writes.
-- [ ] Add initial repositories for users, people, groups, important dates, notes, relationships, and memories.
-- [ ] Document Firestore index requirements as they emerge.
+- [x] Define shared timestamp and ownership types.
+- [x] Define `UserProfile`.
+- [x] Define `Person` and `PersonSource`.
+- [x] Define `PhotoReference` and `PhotoSource`.
+- [x] Define `Relationship`.
+- [x] Define `ImportantDate`.
+- [x] Define `PersonNote`.
+- [x] Define `Memory`.
+- [x] Define `Group`.
+- [x] Define `Interaction`.
+- [x] Define `Reminder`.
+- [x] Create typed Firestore converters or equivalent mapping helpers.
+- [x] Create repository pattern for Firestore reads and writes.
+- [x] Add initial repositories for users, people, groups, important dates, notes, relationships, and memories.
+- [x] Document Firestore index requirements as they emerge.
+
+Firestore index notes:
+
+- `people`: `ownerId ASC`, `displayName ASC` for alphabetical people lists.
+- `memories`: `ownerId ASC`, `startDate DESC` for recent memories.
+- `memories`: `ownerId ASC`, `peopleIds ARRAY_CONTAINS`, `startDate DESC` for person profile memories.
+- `interactions`: `ownerId ASC`, `personId ASC`, `occurredAt DESC` for person interaction history.
+- `reminders`: `ownerId ASC`, `status ASC`, `remindAt ASC` for scheduled reminders.
 
 Acceptance criteria:
 

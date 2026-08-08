@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { DevServiceWorkerCleanup } from "@/components/pwa/dev-service-worker-cleanup";
 import { AuthProvider } from "@/lib/auth/auth-context";
 
 import "./globals.css";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <DevServiceWorkerCleanup />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

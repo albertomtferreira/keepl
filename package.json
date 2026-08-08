@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -LiteralPath public/sw.js -Force -ErrorAction SilentlyContinue; Remove-Item -Path public/workbox-*.js -Force -ErrorAction SilentlyContinue\"",
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
