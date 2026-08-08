@@ -140,13 +140,13 @@ Make Keepl available in English, Portuguese, French, and Spanish while keeping u
 
 Phases:
 
-- [ ] Phase 1: Choose an i18n library compatible with the current Next.js App Router version.
-- [ ] Phase 2: Define supported locales: `en`, `pt`, `fr`, and `es`.
-- [ ] Phase 3: Add translation message files and a typed translation access pattern.
-- [ ] Phase 4: Add locale detection, persistence, and a language selector in Settings.
-- [ ] Phase 5: Replace user-facing app shell, navigation, form, validation, empty-state, and error copy with translation keys.
-- [ ] Phase 6: Localize date, time, recurrence, and relative-time formatting.
-- [ ] Phase 7: Add fallback behavior for missing translations and tests for locale routing, formatting, and critical forms.
+- [x] Phase 1: Choose an i18n library compatible with the current Next.js App Router version.
+- [x] Phase 2: Define supported locales: `en`, `pt`, `fr`, and `es`.
+- [x] Phase 3: Add translation message files and a typed translation access pattern.
+- [x] Phase 4: Add locale detection, persistence, and a language selector in Settings.
+- [x] Phase 5: Replace user-facing app shell, navigation, form, validation, empty-state, and error copy with translation keys.
+- [x] Phase 6: Localize date, time, recurrence, and relative-time formatting.
+- [x] Phase 7: Add fallback behavior for missing translations and tests for locale routing, formatting, and critical forms.
 
 Possible files:
 
