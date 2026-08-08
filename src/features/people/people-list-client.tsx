@@ -3,6 +3,7 @@
 import { Archive, Plus, Search, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -13,10 +14,11 @@ import { getPersonInitials, groupNamesForPerson } from "./person-format";
 
 export function PeopleListClient() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [people, setPeople] = useState<Person[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [query, setQuery] = useState("");
-  const [groupId, setGroupId] = useState("all");
+  const [groupId, setGroupId] = useState(searchParams.get("group") ?? "all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +78,7 @@ export function PeopleListClient() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -86,6 +88,12 @@ export function PeopleListClient() {
             className="h-10 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
+        <Button asChild className="w-full gap-2 sm:w-auto">
+          <Link href="/people/new">
+            <Plus className="size-4" aria-hidden="true" />
+            Add person
+          </Link>
+        </Button>
         <select
           value={groupId}
           onChange={(event) => setGroupId(event.target.value)}

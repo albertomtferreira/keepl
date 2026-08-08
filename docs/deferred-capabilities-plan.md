@@ -102,7 +102,7 @@ Keep shared domain types in `src/types`. Keep provider-specific API code in `src
 
 ## Feature Track 1: Natural-Language Search
 
-Status: Not started
+Status: Complete
 
 Goal:
 
@@ -110,12 +110,12 @@ Allow users to search people, notes, dates, memories, groups, and interactions w
 
 Phases:
 
-- [ ] Phase 1: Define `SearchResult` and `SearchScope` types.
-- [ ] Phase 2: Create a local search service over already-owned Firestore results.
-- [ ] Phase 3: Add `/search` route or global search command UI.
-- [ ] Phase 4: Search people by names, nicknames, contact fields, groups, notes, and memory titles.
-- [ ] Phase 5: Add result ranking based on direct person match, pinned notes, recent memories, and upcoming dates.
-- [ ] Phase 6: Add tests for matching, ranking, empty queries, and owner-scoped inputs.
+- [x] Phase 1: Define `SearchResult` and `SearchScope` types.
+- [x] Phase 2: Create a local search service over already-owned Firestore results.
+- [x] Phase 3: Add `/search` route or global search command UI.
+- [x] Phase 4: Search people by names, nicknames, contact fields, groups, notes, and memory titles.
+- [x] Phase 5: Add result ranking based on direct person match, pinned notes, recent memories, and upcoming dates.
+- [x] Phase 6: Add tests for matching, ranking, empty queries, and owner-scoped inputs.
 
 Possible files:
 

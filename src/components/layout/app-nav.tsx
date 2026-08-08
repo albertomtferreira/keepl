@@ -5,6 +5,7 @@ import {
   Home,
   Library,
   Plus,
+  Search,
   Settings,
   UsersRound,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const primaryNav = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/people", label: "People", icon: UsersRound },
   { href: "/memories", label: "Memories", icon: Library },
+  { href: "/search", label: "Search", icon: Search },
   { href: "/upcoming", label: "Upcoming", icon: CalendarDays },
 ];
 
@@ -50,23 +52,21 @@ export function AppNav() {
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur md:hidden">
-        {[primaryNav[0], primaryNav[1], { href: "/people/new", label: "Add", icon: Plus }, primaryNav[2], primaryNav[3]].map(
-          (item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex h-12 flex-col items-center justify-center gap-1 rounded-lg text-[0.7rem] font-medium text-muted-foreground",
-                pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  ? "bg-[#f1ede4] text-foreground"
-                  : "hover:bg-muted",
-              )}
-            >
-              <item.icon className="size-4" aria-hidden="true" />
-              {item.label}
-            </Link>
-          ),
-        )}
+        {primaryNav.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex h-12 flex-col items-center justify-center gap-1 rounded-lg text-[0.7rem] font-medium text-muted-foreground",
+              pathname === item.href || pathname.startsWith(`${item.href}/`)
+                ? "bg-[#f1ede4] text-foreground"
+                : "hover:bg-muted",
+            )}
+          >
+            <item.icon className="size-4" aria-hidden="true" />
+            {item.label}
+          </Link>
+        ))}
       </nav>
     </>
   );

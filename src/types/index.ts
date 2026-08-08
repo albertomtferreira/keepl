@@ -8,4 +8,5 @@ export type * from "@/types/person";
 export type * from "@/types/photos";
 export type * from "@/types/relationship";
 export type * from "@/types/reminder";
+export type * from "@/types/search";
 export type * from "@/types/user";
