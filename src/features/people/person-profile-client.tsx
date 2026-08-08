@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ImportantDateManager } from "@/features/important-dates/important-date-manager";
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
+import { RelationshipManager } from "@/features/relationships/relationship-manager";
 import { useAuth } from "@/lib/auth/auth-context";
 import { groupsRepository } from "@/repositories/groups";
 import { importantDatesRepository } from "@/repositories/important-dates";
@@ -34,6 +35,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
   const router = useRouter();
   const { user } = useAuth();
   const [person, setPerson] = useState<Person | null>(null);
+  const [people, setPeople] = useState<Person[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
   const [notes, setNotes] = useState<PersonNote[]>([]);
@@ -49,8 +51,9 @@ export function PersonProfileClient({ personId }: { personId: string }) {
 
     async function loadProfile() {
       setLoading(true);
-      const [personResult, groupsResult, datesResult, notesResult, relationshipsResult, memoriesResult] = await Promise.all([
+      const [personResult, peopleResult, groupsResult, datesResult, notesResult, relationshipsResult, memoriesResult] = await Promise.all([
         peopleRepository.getById(ownerId, personId),
+        peopleRepository.listActive(ownerId),
         groupsRepository.listByName(ownerId),
         importantDatesRepository.listForPerson(ownerId, personId).catch(() => []),
         personNotesRepository.listForPerson(ownerId, personId).catch(() => []),
@@ -59,6 +62,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
       ]);
 
       setPerson(personResult);
+      setPeople(peopleResult);
       setGroups(groupsResult);
       setImportantDates(datesResult);
       setNotes(notesResult);
@@ -156,10 +160,8 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         <ProfileSection icon={NotebookText} title="Notes">
           <PersonNotesManager notes={notes} onChange={setNotes} personId={person.id} />
         </ProfileSection>
-        <ProfileSection icon={UsersRound} title="Relationships" actionLabel="Add">
-          {relationships.map((relationship) => (
-            <p key={relationship.id} className="text-sm">{relationship.label}</p>
-          ))}
+        <ProfileSection icon={UsersRound} title="Relationships">
+          <RelationshipManager currentPerson={person} people={people} relationships={relationships} onChange={setRelationships} />
         </ProfileSection>
         <ProfileSection icon={NotebookText} title="Memories" actionLabel="Add">
           {memories.map((memory) => (

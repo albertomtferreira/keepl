@@ -243,17 +243,24 @@ Acceptance criteria:
 
 ## Phase 5: Relationships
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Implement relationship repository.
-- [ ] Add relationship creation between two existing people.
-- [ ] Add inverse relationship helper functions.
-- [ ] Query relationships where a profile person appears as either side.
-- [ ] Display relationship labels correctly from the current person's perspective.
-- [ ] Add edit and delete relationship actions.
-- [ ] Add tests for inverse relationship resolution.
+- [x] Implement relationship repository.
+- [x] Add relationship creation between two existing people.
+- [x] Add inverse relationship helper functions.
+- [x] Query relationships where a profile person appears as either side.
+- [x] Display relationship labels correctly from the current person's perspective.
+- [x] Add edit and delete relationship actions.
+- [x] Add tests for inverse relationship resolution.
+
+Implementation notes:
+
+- Relationships are managed inline from the person profile.
+- Relationship records connect `fromPersonId` and `toPersonId`; names are resolved from owned people at render time.
+- Perspective labels use an explicit `inverseLabel` when present and otherwise fall back to common inverse relationship helpers.
+- Profile relationship loading queries both `fromPersonId` and `toPersonId`, scoped by `ownerId`.
 
 Acceptance criteria:
 
@@ -392,3 +399,8 @@ Start with Phase 5:
 1. Implement relationship creation between existing people.
 2. Add inverse relationship helpers and current-person perspective labels.
 3. Validate with lint, TypeScript checks, targeted tests, and production build.
+
+
+## Improvements
+- Groups - Let the user create groups to prevent duplication or label mistakes. The field on the "create/edit" person should render a dropdown box with multiple selections, with the groups organised by alphabetic order and at the bottom of the selection add an option to add new groups
+- The user should be able to set a relationship with the created person
