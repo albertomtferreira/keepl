@@ -14,6 +14,12 @@ export class RemindersRepository extends OwnedFirestoreRepository<Reminder> {
       orderBy: { field: "remindAt" },
     });
   }
+
+  listForImportantDate(ownerId: string, importantDateId: string) {
+    return this.list(ownerId, {
+      constraints: [where("importantDateId", "==", importantDateId)],
+    });
+  }
 }
 
 export const remindersRepository = new RemindersRepository();

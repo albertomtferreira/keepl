@@ -7,7 +7,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint . --ignore-pattern public/workbox-*.js --ignore-pattern public/sw.js",
+    "lint": "eslint . --ignore-pattern public/workbox-*.js --ignore-pattern public/sw.js --ignore-pattern public/fallback-*.js",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",

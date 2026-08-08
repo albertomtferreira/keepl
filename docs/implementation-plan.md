@@ -361,16 +361,25 @@ Acceptance criteria:
 
 ## Phase 9: Reminder Architecture and PWA Polish
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Implement reminder model and repository.
-- [ ] Add reminder presets to important dates where practical.
-- [ ] Store reminder records with status.
-- [ ] Defer push notifications unless the foundation is already stable.
-- [ ] Improve installable PWA behavior.
-- [ ] Add offline-friendly shell where sensible.
+- [x] Implement reminder model and repository.
+- [x] Add reminder presets to important dates where practical.
+- [x] Store reminder records with status.
+- [x] Defer push notifications unless the foundation is already stable.
+- [x] Improve installable PWA behavior.
+- [x] Add offline-friendly shell where sensible.
+
+Implementation notes:
+
+- Reminder records are user-owned Firestore documents with a `scheduled` status and optional links back to people and important dates.
+- Important date forms can now create reminder records for same day, 1 day, 1 week, 2 weeks, or 1 month before the next occurrence.
+- Updating an important date replaces its existing reminder records; deleting an important date deletes the linked reminders.
+- Upcoming now shows scheduled reminders alongside upcoming dates.
+- Push notifications remain deferred; this phase only creates data and visible UI for future notification delivery.
+- The PWA manifest includes app identity metadata and shortcuts, and the service worker uses `/offline` as a document fallback.
 
 Acceptance criteria:
 

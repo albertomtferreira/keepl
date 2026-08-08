@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { differenceInCalendarDays } from "date-fns";
+import { addYears, differenceInCalendarDays, startOfDay, subDays } from "date-fns";
+import { Timestamp } from "firebase/firestore";
 import { CalendarPlus, Pencil, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -17,7 +18,12 @@ import {
   getNextAnnualOccurrence,
 } from "@/lib/dates/flexible-date";
 import { importantDatesRepository } from "@/repositories/important-dates";
-import type { ImportantDate, ImportantDateKind } from "@/types";
+import { remindersRepository } from "@/repositories/reminders";
+import type { FlexibleDate, ImportantDate, ImportantDateKind } from "@/types";
+
+const reminderPresetValues = ["none", "0", "1", "7", "14", "30"] as const;
+
+type ReminderPresetValue = (typeof reminderPresetValues)[number];
 
 const dateSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
@@ -25,6 +31,7 @@ const dateSchema = z.object({
   includeYear: z.boolean(),
   kind: z.enum(["birthday", "anniversary", "holiday", "custom"]),
   repeatsAnnually: z.boolean(),
+  reminderPreset: z.enum(reminderPresetValues),
   notes: z.string().trim().optional(),
 });
 
@@ -57,6 +64,15 @@ export function ImportantDateManager({
     setError(null);
     setEditing(date);
     reset(formValues(date));
+
+    if (!user || date === "new") {
+      return;
+    }
+
+    void remindersRepository.listForImportantDate(user.uid, date.id).then((reminders) => {
+      const scheduledReminder = reminders.find((reminder) => reminder.status === "scheduled");
+      reset(formValues(date, scheduledReminder?.remindAt.toDate()));
+    });
   }
 
   async function onSubmit(values: DateFormValues) {
@@ -80,11 +96,22 @@ export function ImportantDateManager({
       ...(values.notes ? { notes: values.notes } : {}),
     };
 
+    let importantDateId: string;
+
     if (editing && editing !== "new") {
-      await importantDatesRepository.update(user.uid, editing.id, payload);
+      importantDateId = editing.id;
+      await importantDatesRepository.update(user.uid, importantDateId, payload);
     } else {
-      await importantDatesRepository.create(user.uid, payload);
+      importantDateId = await importantDatesRepository.create(user.uid, payload);
     }
+
+    await replaceReminderForImportantDate(user.uid, importantDateId, {
+      date,
+      personId,
+      reminderPreset: values.reminderPreset,
+      repeatsAnnually: values.repeatsAnnually,
+      title: values.title,
+    });
 
     onChange(await importantDatesRepository.listForPerson(user.uid, personId));
     setEditing(null);
@@ -96,6 +123,7 @@ export function ImportantDateManager({
     }
 
     await importantDatesRepository.delete(user.uid, date.id);
+    await deleteRemindersForImportantDate(user.uid, date.id);
     onChange(dates.filter((item) => item.id !== date.id));
   }
 
@@ -154,6 +182,16 @@ export function ImportantDateManager({
             <input type="checkbox" {...register("repeatsAnnually")} />
             Repeats annually
           </label>
+          <Field label="Reminder" error={errors.reminderPreset?.message}>
+            <select className={inputClassName} {...register("reminderPreset")}>
+              <option value="none">No reminder</option>
+              <option value="0">Same day</option>
+              <option value="1">1 day before</option>
+              <option value="7">1 week before</option>
+              <option value="14">2 weeks before</option>
+              <option value="30">1 month before</option>
+            </select>
+          </Field>
           <Field label="Notes" error={errors.notes?.message}>
             <textarea className={`${inputClassName} h-20 py-2`} {...register("notes")} />
           </Field>
@@ -179,7 +217,7 @@ export function ImportantDateManager({
   );
 }
 
-function formValues(editing: ImportantDate | "new" | null): DateFormValues {
+function formValues(editing: ImportantDate | "new" | null, reminderDate?: Date): DateFormValues {
   const date = editing && editing !== "new" ? editing : null;
   return {
     title: date?.title ?? "",
@@ -187,6 +225,7 @@ function formValues(editing: ImportantDate | "new" | null): DateFormValues {
     includeYear: Boolean(date?.date.year),
     kind: date?.kind ?? "custom",
     repeatsAnnually: date?.repeatsAnnually ?? true,
+    reminderPreset: date && reminderDate ? getReminderPresetValue(date.date, reminderDate, date.repeatsAnnually) : "none",
     notes: date?.notes ?? "",
   };
 }
@@ -202,4 +241,81 @@ function Field({ children, error, label }: { children: React.ReactNode; error?: 
       {error ? <span className="block text-xs text-destructive">{error}</span> : null}
     </label>
   );
+}
+
+async function replaceReminderForImportantDate(
+  ownerId: string,
+  importantDateId: string,
+  values: {
+    date: FlexibleDate;
+    personId: string;
+    reminderPreset: ReminderPresetValue;
+    repeatsAnnually: boolean;
+    title: string;
+  },
+) {
+  await deleteRemindersForImportantDate(ownerId, importantDateId);
+
+  if (values.reminderPreset === "none") {
+    return;
+  }
+
+  const remindAt = getReminderDate(values.date, Number(values.reminderPreset), values.repeatsAnnually);
+
+  if (!remindAt) {
+    return;
+  }
+
+  await remindersRepository.create(ownerId, {
+    title: `Remember ${values.title}`,
+    remindAt: Timestamp.fromDate(remindAt),
+    status: "scheduled",
+    personId: values.personId,
+    importantDateId,
+  });
+}
+
+async function deleteRemindersForImportantDate(ownerId: string, importantDateId: string) {
+  const reminders = await remindersRepository.listForImportantDate(ownerId, importantDateId);
+  await Promise.all(reminders.map((reminder) => remindersRepository.delete(ownerId, reminder.id)));
+}
+
+function getReminderDate(date: FlexibleDate, offsetDays: number, repeatsAnnually: boolean) {
+  const today = startOfDay(new Date());
+  let occurrence = repeatsAnnually ? getNextAnnualOccurrence(date, today) : getOneTimeOccurrence(date, today);
+
+  if (!occurrence) {
+    return null;
+  }
+
+  let reminderDate = startOfDay(subDays(occurrence, offsetDays));
+
+  while (repeatsAnnually && reminderDate < today) {
+    occurrence = addYears(occurrence, 1);
+    reminderDate = startOfDay(subDays(occurrence, offsetDays));
+  }
+
+  return reminderDate < today ? null : reminderDate;
+}
+
+function getOneTimeOccurrence(date: FlexibleDate, from: Date) {
+  if (!date.year || !date.month || !date.day) {
+    return getNextAnnualOccurrence(date, from);
+  }
+
+  const occurrence = startOfDay(new Date(date.year, date.month - 1, date.day));
+  return occurrence < startOfDay(from) ? null : occurrence;
+}
+
+function getReminderPresetValue(date: FlexibleDate, reminderDate: Date, repeatsAnnually: boolean): ReminderPresetValue {
+  const occurrence = repeatsAnnually ? getNextAnnualOccurrence(date, reminderDate) : getOneTimeOccurrence(date, reminderDate);
+
+  if (!occurrence) {
+    return "none";
+  }
+
+  const daysBefore = differenceInCalendarDays(occurrence, reminderDate);
+  return reminderPresetValues.includes(String(daysBefore) as ReminderPresetValue)
+    ? (String(daysBefore) as ReminderPresetValue)
+    : "none";
 }
