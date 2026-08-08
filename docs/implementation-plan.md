@@ -270,21 +270,30 @@ Acceptance criteria:
 
 ## Phase 6: Memories
 
-Status: Not started
+Status: Complete
 
 Tasks:
 
-- [ ] Implement memory repository.
-- [ ] Use `peopleIds: string[]` for MVP many-to-many memory association unless a stronger Firestore reason appears.
-- [ ] Document Firestore query and index implications for `peopleIds`.
-- [ ] Build Memories list page.
-- [ ] Build Add Memory flow.
-- [ ] Include title, start date, optional end date, associated people, location, description, tags, and photo integration placeholder.
-- [ ] Add searchable multi-person selector.
-- [ ] Build memory detail page.
-- [ ] Show memories on associated person profiles.
-- [ ] Show recent memories on Home.
-- [ ] Add Google Photos service boundary and placeholder UI.
+- [x] Implement memory repository.
+- [x] Use `peopleIds: string[]` for MVP many-to-many memory association unless a stronger Firestore reason appears.
+- [x] Document Firestore query and index implications for `peopleIds`.
+- [x] Build Memories list page.
+- [x] Build Add Memory flow.
+- [x] Include title, start date, optional end date, associated people, location, description, tags, and photo integration placeholder.
+- [x] Add searchable multi-person selector.
+- [x] Build memory detail page.
+- [x] Show memories on associated person profiles.
+- [x] Show recent memories on Home.
+- [x] Add Google Photos service boundary and placeholder UI.
+
+Implementation notes:
+
+- Memories use a `peopleIds: string[]` field so one memory can appear on multiple person profiles.
+- Memories currently load with `ownerId == currentUser.uid`, then sort and filter client-side to avoid requiring composite indexes before the app has enough data to need them.
+- Future Firestore indexes, once memory volume requires server-side sorting/filtering:
+  - `memories`: `ownerId ASC`, `startDate DESC` for recent memories.
+  - `memories`: `ownerId ASC`, `peopleIds ARRAY_CONTAINS`, `startDate DESC` for person profile memories.
+- Google Photos is represented by a service boundary and placeholder UI only; no binary upload or Firebase Storage path was added.
 
 Acceptance criteria:
 

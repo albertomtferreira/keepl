@@ -1,5 +1,3 @@
-import { where } from "firebase/firestore";
-
 import { OwnedFirestoreRepository } from "@/repositories/base-repository";
 import type { Memory } from "@/types";
 
@@ -8,19 +6,21 @@ export class MemoriesRepository extends OwnedFirestoreRepository<Memory> {
     super("memories");
   }
 
-  listRecent(ownerId: string, count = 10) {
-    return this.list(ownerId, {
-      orderBy: { field: "startDate", direction: "desc" },
-      limit: count,
-    });
+  async listRecent(ownerId: string, count = 10) {
+    const memories = await this.list(ownerId);
+
+    return sortByNewestStartDate(memories).slice(0, count);
   }
 
-  listForPerson(ownerId: string, personId: string) {
-    return this.list(ownerId, {
-      constraints: [where("peopleIds", "array-contains", personId)],
-      orderBy: { field: "startDate", direction: "desc" },
-    });
+  async listForPerson(ownerId: string, personId: string) {
+    const memories = await this.list(ownerId);
+
+    return sortByNewestStartDate(memories.filter((memory) => memory.peopleIds.includes(personId)));
   }
+}
+
+function sortByNewestStartDate(memories: Memory[]) {
+  return [...memories].sort((first, second) => second.startDate.toMillis() - first.startDate.toMillis());
 }
 
 export const memoriesRepository = new MemoriesRepository();

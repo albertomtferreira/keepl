@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CalendarHeart,
   Edit,
+  Library,
   Mail,
   NotebookText,
   Phone,
@@ -18,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { MemoryCard } from "@/features/memories/memory-card";
 import { ImportantDateManager } from "@/features/important-dates/important-date-manager";
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
 import { RelationshipManager } from "@/features/relationships/relationship-manager";
@@ -163,9 +165,9 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         <ProfileSection icon={UsersRound} title="Relationships">
           <RelationshipManager currentPerson={person} people={people} relationships={relationships} onChange={setRelationships} />
         </ProfileSection>
-        <ProfileSection icon={NotebookText} title="Memories" actionLabel="Add">
+        <ProfileSection icon={Library} title="Memories" actionHref={`/memories/new?personId=${person.id}`} actionLabel="Add">
           {memories.map((memory) => (
-            <p key={memory.id} className="text-sm">{memory.title}</p>
+            <MemoryCard key={memory.id} memory={memory} people={people} />
           ))}
         </ProfileSection>
         <ProfileSection icon={Tags} title="Social Profiles" actionHref={`/people/${person.id}/edit`} actionLabel="Edit">
