@@ -1,5 +1,6 @@
 export type * from "@/types/common";
 export type * from "@/types/group";
+export type * from "@/types/graph";
 export type * from "@/types/important-date";
 export type * from "@/types/interaction";
 export type * from "@/types/memory";

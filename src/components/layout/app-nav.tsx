@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Home,
   Library,
+  Network,
   Plus,
   Search,
   Settings,
@@ -20,6 +21,7 @@ const primaryNav = [
   { href: "/home", labelKey: "home", icon: Home },
   { href: "/people", labelKey: "people", icon: UsersRound },
   { href: "/memories", labelKey: "memories", icon: Library },
+  { href: "/graph", labelKey: "graph", icon: Network },
   { href: "/search", labelKey: "search", icon: Search },
   { href: "/upcoming", labelKey: "upcoming", icon: CalendarDays },
 ] as const;
@@ -55,7 +57,7 @@ export function AppNav() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t bg-white/95 px-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur md:hidden">
         {primaryNav.map((item) => (
           <Link
             key={item.href}

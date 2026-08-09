@@ -10,7 +10,8 @@
     "search": "Search",
     "upcoming": "Upcoming",
     "add": "Add",
-    "settings": "Settings"
+    "settings": "Settings",
+    "graph": "Graph"
   },
   "common": {
     "back": "Back",
@@ -44,7 +45,9 @@
     "upcomingTitle": "Upcoming",
     "upcomingDescription": "Birthdays, anniversaries, reminders, and other important dates gathered by when they are next due.",
     "settingsTitle": "Settings",
-    "settingsDescription": "Account and integration boundaries are here early, without requesting extra Google permissions."
+    "settingsDescription": "Account and integration boundaries are here early, without requesting extra Google permissions.",
+    "graphTitle": "Relationship graph",
+    "graphDescription": "See how your people connect, using only relationships you have already saved."
   },
   "home": {
     "people": "People",
@@ -197,5 +200,20 @@
     "notificationPermissionDetail": "Reminder notifications will ask only when notification features are enabled.",
     "progressivePermissions": "Progressive permissions",
     "progressivePermissionsDetail": "Keepl only uses Google sign-in right now. Contacts, Photos, Calendar, and notification permissions are kept behind their own future connection steps."
+  },
+  "graphPage": {
+    "title": "Relationship graph",
+    "miniTitle": "Relationship map",
+    "openFullGraph": "Open graph",
+    "graphAria": "Relationship graph visualization",
+    "relationshipTypeFilter": "Relationship type",
+    "groupFilter": "Group",
+    "allRelationshipTypes": "All types",
+    "allGroups": "All groups",
+    "listTitle": "Relationship list",
+    "noRelationships": "No relationships match these filters.",
+    "empty": "Add relationships from a person profile to see them here.",
+    "loading": "Loading relationship graph...",
+    "loadError": "Could not load the relationship graph."
   }
 }

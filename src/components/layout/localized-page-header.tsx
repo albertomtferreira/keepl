@@ -9,6 +9,7 @@ type PageHeaderKey =
   | "newPerson"
   | "memories"
   | "newMemory"
+  | "graph"
   | "search"
   | "upcoming"
   | "settings";

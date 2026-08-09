@@ -471,12 +471,12 @@ Visualize relationships between people without changing the underlying relations
 
 Phases:
 
-- [ ] Phase 1: Define graph node and edge view models.
-- [ ] Phase 2: Build local graph derivation from owned people and relationships.
-- [ ] Phase 3: Add person profile mini graph.
-- [ ] Phase 4: Add full graph route.
-- [ ] Phase 5: Add filters by relationship type and group.
-- [ ] Phase 6: Add accessibility-friendly list alternative.
+- [x] Phase 1: Define graph node and edge view models.
+- [x] Phase 2: Build local graph derivation from owned people and relationships.
+- [x] Phase 3: Add person profile mini graph.
+- [x] Phase 4: Add full graph route.
+- [x] Phase 5: Add filters by relationship type and group.
+- [x] Phase 6: Add accessibility-friendly list alternative.
 
 Possible route:
 

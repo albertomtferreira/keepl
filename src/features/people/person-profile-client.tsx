@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { RelationshipGraphView } from "@/features/graph/relationship-graph-view";
 import { MemoryCard } from "@/features/memories/memory-card";
 import { InteractionManager } from "@/features/interactions/interaction-manager";
 import { formatLastInteraction } from "@/features/interactions/interaction-format";
@@ -27,6 +28,7 @@ import { ImportantDateManager } from "@/features/important-dates/important-date-
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
 import { RelationshipManager } from "@/features/relationships/relationship-manager";
 import { useAuth } from "@/lib/auth/auth-context";
+import { deriveRelationshipGraph } from "@/lib/graph/relationship-graph";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
 import { importantDatesRepository } from "@/repositories/important-dates";
@@ -41,7 +43,7 @@ import { formatBirthday, getPersonInitials, groupNamesForPerson } from "./person
 export function PersonProfileClient({ personId }: { personId: string }) {
   const router = useRouter();
   const { user } = useAuth();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [person, setPerson] = useState<Person | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -120,6 +122,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
 
   const groupNames = groupNamesForPerson(person, groups);
   const lastInteraction = interactions[0];
+  const miniGraph = deriveRelationshipGraph(people, relationships, { focusPersonId: person.id });
 
   return (
     <div className="space-y-5">
@@ -175,6 +178,9 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         </ProfileSection>
         <ProfileSection icon={UsersRound} title="Relationships">
           <RelationshipManager currentPerson={person} people={people} relationships={relationships} onChange={setRelationships} />
+        </ProfileSection>
+        <ProfileSection icon={UsersRound} title={t("graphPage", "miniTitle")}>
+          <RelationshipGraphView compact graph={miniGraph} relationships={relationships} groups={groups} />
         </ProfileSection>
         <ProfileSection icon={MessageCircle} title="Interactions">
           <InteractionManager personId={person.id} interactions={interactions} onChange={setInteractions} />
