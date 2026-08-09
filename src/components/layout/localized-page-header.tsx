@@ -10,6 +10,7 @@ type PageHeaderKey =
   | "memories"
   | "newMemory"
   | "graph"
+  | "exportImport"
   | "search"
   | "upcoming"
   | "settings";

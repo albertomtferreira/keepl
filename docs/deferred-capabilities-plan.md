@@ -529,13 +529,13 @@ Let users export and later import their Keepl data for portability and backup.
 
 Phases:
 
-- [ ] Phase 1: Define versioned export schema.
-- [ ] Phase 2: Add JSON export for all owned records.
-- [ ] Phase 3: Add import validation with Zod.
-- [ ] Phase 4: Add dry-run preview before import.
-- [ ] Phase 5: Add duplicate detection.
-- [ ] Phase 6: Add selective import.
-- [ ] Phase 7: Add tests for schema migration and malformed imports.
+- [x] Phase 1: Define versioned export schema.
+- [x] Phase 2: Add JSON export for all owned records.
+- [x] Phase 3: Add import validation with Zod.
+- [x] Phase 4: Add dry-run preview before import.
+- [x] Phase 5: Add duplicate detection.
+- [x] Phase 6: Add selective import.
+- [x] Phase 7: Add tests for schema migration and malformed imports.
 
 Possible files:
 
@@ -629,3 +629,4 @@ Use this checklist before marking any deferred feature complete.
 
 ## Further features
 - Improve the label structure from memories to mirror the structure used on the people group labels 
+- focused bottom navbar on sm devices. Only have home, people, memories and upcoming. all other under a ... button that when clicked will open a box with the other options. Also, hide the page where the user is instead of highlight

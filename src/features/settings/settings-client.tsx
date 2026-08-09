@@ -12,7 +12,9 @@ import {
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { LanguageSettings } from "@/features/localization/language-settings";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -205,6 +207,11 @@ function IntegrationCard({ section }: { section: SettingsSection }) {
         </span>
       </div>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">{section.status.detail}</p>
+      {section.title === t("settings", "data") ? (
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href="/export">{t("settings", "openDataTools")}</Link>
+        </Button>
+      ) : null}
     </section>
   );
 }

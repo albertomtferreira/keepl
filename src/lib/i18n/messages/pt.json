@@ -47,7 +47,9 @@
     "settingsTitle": "Definições",
     "settingsDescription": "A conta e os limites das integrações estão aqui desde cedo, sem pedir permissões adicionais da Google.",
     "graphTitle": "Grafo de relações",
-    "graphDescription": "Veja como as suas pessoas se ligam, usando apenas relações que já guardou."
+    "graphDescription": "Veja como as suas pessoas se ligam, usando apenas relações que já guardou.",
+    "exportImportTitle": "Exportar e importar",
+    "exportImportDescription": "Transfere uma copia JSON portatil ou revê um ficheiro Keepl antes de importar registos selecionados."
   },
   "home": {
     "people": "Pessoas",
@@ -185,6 +187,7 @@
     "notifications": "Notificações",
     "privacy": "Privacidade",
     "data": "Dados",
+    "openDataTools": "Abrir ferramentas de dados",
     "googleConnected": "Conta Google ligada",
     "googleConnectedDetail": "O início de sessão está ligado. As permissões de Contactos, Fotografias e Calendário continuam separadas.",
     "googleUnavailable": "Início de sessão Google indisponível",
@@ -215,5 +218,34 @@
     "empty": "Adicione relações a partir do perfil de uma pessoa para as ver aqui.",
     "loading": "A carregar o grafo de relações...",
     "loadError": "Não foi possível carregar o grafo de relações."
+  },
+  "exportImportPage": {
+    "exportTitle": "Exportar os teus dados",
+    "exportDescription": "Transfere um ficheiro JSON versionado com apenas os registos da tua conta Keepl.",
+    "downloadJson": "Transferir JSON",
+    "exporting": "A preparar exportacao...",
+    "exportSuccess": "Exportacao transferida.",
+    "exportError": "Nao foi possivel exportar os teus dados.",
+    "importTitle": "Importar de JSON",
+    "importDescription": "Escolhe um ficheiro de exportacao Keepl para validar e rever o que sera importado antes de escrever qualquer dado.",
+    "chooseFile": "Escolher ficheiro JSON",
+    "previewTitle": "Pre-visualizacao da importacao",
+    "previewDescription": "{count} registos selecionados para importar.",
+    "recordCount": "{count} registos",
+    "duplicateCount": "{count} possiveis duplicados",
+    "duplicatesHint": "Foram detetados possiveis duplicados. Podes ignorar colecoes inteiras antes de confirmar a importacao.",
+    "confirmImport": "Importar selecionados",
+    "importing": "A importar...",
+    "importSuccess": "Registos selecionados importados.",
+    "importError": "Nao foi possivel importar os registos selecionados.",
+    "importValidationError": "Este ficheiro nao e uma exportacao Keepl valida.",
+    "collectionPeople": "Pessoas",
+    "collectionGroups": "Grupos",
+    "collectionRelationships": "Relacoes",
+    "collectionImportantDates": "Datas importantes",
+    "collectionPersonNotes": "Notas",
+    "collectionMemories": "Memorias",
+    "collectionInteractions": "Interacoes",
+    "collectionReminders": "Lembretes"
   }
 }

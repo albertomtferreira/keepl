@@ -47,7 +47,9 @@
     "settingsTitle": "Paramètres",
     "settingsDescription": "Le compte et les limites d’intégration sont déjà ici, sans demander de permissions Google supplémentaires.",
     "graphTitle": "Graphe des relations",
-    "graphDescription": "Voyez comment vos personnes sont reli?es, uniquement avec les relations que vous avez d?j? enregistr?es."
+    "graphDescription": "Voyez comment vos personnes sont reli?es, uniquement avec les relations que vous avez d?j? enregistr?es.",
+    "exportImportTitle": "Exporter et importer",
+    "exportImportDescription": "Telecharge une sauvegarde JSON portable ou verifie un fichier Keepl avant d'importer les enregistrements choisis."
   },
   "home": {
     "people": "Personnes",
@@ -185,6 +187,7 @@
     "notifications": "Notifications",
     "privacy": "Confidentialité",
     "data": "Données",
+    "openDataTools": "Ouvrir les outils de donnees",
     "googleConnected": "Compte Google connecté",
     "googleConnectedDetail": "La connexion est active. Les permissions Contacts, Photos et Calendrier restent séparées.",
     "googleUnavailable": "Connexion Google indisponible",
@@ -215,5 +218,34 @@
     "empty": "Ajoutez des relations depuis le profil d'une personne pour les voir ici.",
     "loading": "Chargement du graphe des relations...",
     "loadError": "Impossible de charger le graphe des relations."
+  },
+  "exportImportPage": {
+    "exportTitle": "Exporter tes donnees",
+    "exportDescription": "Telecharge un fichier JSON versionne contenant uniquement les enregistrements de ton compte Keepl.",
+    "downloadJson": "Telecharger JSON",
+    "exporting": "Preparation de l'export...",
+    "exportSuccess": "Export telecharge.",
+    "exportError": "Impossible d'exporter tes donnees.",
+    "importTitle": "Importer depuis JSON",
+    "importDescription": "Choisis un fichier d'export Keepl pour le valider et voir ce qui serait importe avant toute ecriture.",
+    "chooseFile": "Choisir un fichier JSON",
+    "previewTitle": "Apercu d'import",
+    "previewDescription": "{count} enregistrements selectionnes pour l'import.",
+    "recordCount": "{count} enregistrements",
+    "duplicateCount": "{count} doublons possibles",
+    "duplicatesHint": "Des doublons possibles ont ete detectes. Tu peux ignorer des collections entieres avant de confirmer l'import.",
+    "confirmImport": "Importer la selection",
+    "importing": "Import...",
+    "importSuccess": "Enregistrements selectionnes importes.",
+    "importError": "Impossible d'importer les enregistrements selectionnes.",
+    "importValidationError": "Ce fichier n'est pas un export Keepl valide.",
+    "collectionPeople": "Personnes",
+    "collectionGroups": "Groupes",
+    "collectionRelationships": "Relations",
+    "collectionImportantDates": "Dates importantes",
+    "collectionPersonNotes": "Notes",
+    "collectionMemories": "Souvenirs",
+    "collectionInteractions": "Interactions",
+    "collectionReminders": "Rappels"
   }
 }

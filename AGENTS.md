@@ -31,3 +31,15 @@ Keepl supports English, Portuguese, French, and Spanish. All new user-facing UI 
 - If provider/service helpers return English status text, localize it at the UI boundary unless the service itself has been redesigned to return translation keys.
 - Before finishing any UI feature, scan changed files for new hard-coded English user-facing strings and move them into the message files.
 - Run `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build` after localization-affecting changes.
+
+## Data Portability Requirements
+
+Keepl supports user-controlled export and import for backup and portability. Any future feature that adds or changes portable user-owned data must keep export/import current.
+
+- When adding a new top-level user-owned collection, add it to the versioned export schema in `src/types/export.ts`, the JSON export service in `src/services/export/export-data.ts`, and the import validation/write path in `src/services/import/import-data.ts`.
+- When adding portable fields to an existing exported record type, verify serialization, import validation, duplicate detection, and owner reassignment still preserve the field correctly.
+- Imported records must always receive the currently authenticated user's `ownerId`; never trust `ownerId` from an import file.
+- Import must remain preview-first. Do not write imported records without an explicit user confirmation step.
+- Provider tokens, local cache state, transient sync cursors, AI processing state, and other non-portable or security-sensitive fields should be excluded unless a feature-specific portability decision explicitly includes them.
+- If a future feature stores references to external services, export only owner-scoped references or metadata that are useful and safe to restore. Do not export secrets or request new provider permissions during import.
+- Add or update tests for schema validation, malformed imports, migration behavior, and ownership-sensitive import/export behavior whenever export/import coverage changes.

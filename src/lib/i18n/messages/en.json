@@ -47,7 +47,9 @@
     "settingsTitle": "Settings",
     "settingsDescription": "Account and integration boundaries are here early, without requesting extra Google permissions.",
     "graphTitle": "Relationship graph",
-    "graphDescription": "See how your people connect, using only relationships you have already saved."
+    "graphDescription": "See how your people connect, using only relationships you have already saved.",
+    "exportImportTitle": "Export and import",
+    "exportImportDescription": "Download a portable backup or preview a Keepl JSON file before importing selected records."
   },
   "home": {
     "people": "People",
@@ -185,6 +187,7 @@
     "notifications": "Notifications",
     "privacy": "Privacy",
     "data": "Data",
+    "openDataTools": "Open data tools",
     "googleConnected": "Google account connected",
     "googleConnectedDetail": "Sign-in is connected. Contacts, Photos, and Calendar permissions remain separate.",
     "googleUnavailable": "Google sign-in unavailable",
@@ -215,5 +218,34 @@
     "empty": "Add relationships from a person profile to see them here.",
     "loading": "Loading relationship graph...",
     "loadError": "Could not load the relationship graph."
+  },
+  "exportImportPage": {
+    "exportTitle": "Export your data",
+    "exportDescription": "Download a versioned JSON file containing only records owned by your signed-in Keepl account.",
+    "downloadJson": "Download JSON",
+    "exporting": "Preparing export...",
+    "exportSuccess": "Export downloaded.",
+    "exportError": "Could not export your data.",
+    "importTitle": "Import from JSON",
+    "importDescription": "Choose a Keepl export file to validate it and preview what would be imported before anything is written.",
+    "chooseFile": "Choose JSON file",
+    "previewTitle": "Import preview",
+    "previewDescription": "{count} records selected for import.",
+    "recordCount": "{count} records",
+    "duplicateCount": "{count} possible duplicates",
+    "duplicatesHint": "Possible duplicates were detected. You can skip whole collections before confirming the import.",
+    "confirmImport": "Import selected",
+    "importing": "Importing...",
+    "importSuccess": "Selected records imported.",
+    "importError": "Could not import the selected records.",
+    "importValidationError": "This file is not a valid Keepl export.",
+    "collectionPeople": "People",
+    "collectionGroups": "Groups",
+    "collectionRelationships": "Relationships",
+    "collectionImportantDates": "Important dates",
+    "collectionPersonNotes": "Notes",
+    "collectionMemories": "Memories",
+    "collectionInteractions": "Interactions",
+    "collectionReminders": "Reminders"
   }
 }
