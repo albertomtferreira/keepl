@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Timestamp } from "firebase/firestore";
-import { ArrowLeft, Image as PhotoIcon, Save, Search } from "lucide-react";
+import { ArrowLeft, Save, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,9 +14,9 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
 import { peopleRepository } from "@/repositories/people";
-import { getGooglePhotosIntegrationStatus } from "@/services/google/photos";
 import type { Memory, Person } from "@/types";
 import { dateInputValue } from "./memory-format";
+import { PhotoReferencePicker } from "./photo-reference-picker";
 
 function createMemorySchema(messages = {
   titleRequired: "Title is required",
@@ -47,9 +47,9 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>(memory?.peopleIds ?? (preselectedPersonId ? [preselectedPersonId] : []));
   const [personQuery, setPersonQuery] = useState("");
+  const [photos, setPhotos] = useState(memory?.photos ?? []);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const photosStatus = getGooglePhotosIntegrationStatus();
 
   useEffect(() => {
     if (!user) {
@@ -115,7 +115,7 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
         ...(values.location ? { location: values.location } : {}),
         ...(values.description ? { description: values.description } : {}),
         tags: [...new Set((values.tags ?? "").split(",").map((tag) => tag.trim()).filter(Boolean))],
-        photos: memory?.photos ?? [],
+        photos,
       };
 
       if (memory) {
@@ -180,17 +180,7 @@ export function MemoryForm({ memory, preselectedPersonId }: { memory?: Memory; p
         </div>
       </section>
 
-      <section className="rounded-lg border border-dashed bg-white p-4">
-        <div className="flex items-start gap-3">
-          <PhotoIcon className="mt-0.5 size-4 text-muted-foreground" aria-hidden="true" />
-          <div>
-            <h2 className="text-sm font-medium">{t("memoryForm", "photos")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {photosStatus.state === "permission-required" ? t("memoryForm", "photosPermissionRequired") : photosStatus.label}. {t("memoryForm", "photosHint")}
-            </p>
-          </div>
-        </div>
-      </section>
+      <PhotoReferencePicker photos={photos} onChange={setPhotos} />
 
       {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
 

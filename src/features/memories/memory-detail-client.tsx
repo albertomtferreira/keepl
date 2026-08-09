@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, Edit, Image as PhotoIcon, MapPin, Trash2, UsersRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Edit, Expand, Image as PhotoIcon, MapPin, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,14 +12,17 @@ import { memoriesRepository } from "@/repositories/memories";
 import { peopleRepository } from "@/repositories/people";
 import { getGooglePhotosIntegrationStatus } from "@/services/google/photos";
 import type { Memory, Person } from "@/types";
+import { GooglePhotoThumbnail } from "./google-photo-thumbnail";
 import { formatMemoryDate, memoryPeopleNames } from "./memory-format";
+import { PhotoViewerDialog } from "./photo-viewer-dialog";
 
 export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   const router = useRouter();
   const { user } = useAuth();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const photosStatus = getGooglePhotosIntegrationStatus();
 
@@ -149,12 +152,51 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
       <section className="rounded-lg border border-dashed bg-white p-4">
         <h2 className="flex items-center gap-2 font-semibold">
           <PhotoIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-          Photos
+          {t("memoryForm", "photos")}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {memory.photos?.length ? `${memory.photos.length} photo reference saved.` : `${photosStatus.label}. Memories work without photos for now.`}
-        </p>
+        {memory.photos?.length ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {memory.photos.map((photo, index) => (
+              <div key={`${photo.source}-${photo.externalId ?? index}`} className="overflow-hidden rounded-md border bg-white">
+                <div className="relative">
+                  <GooglePhotoThumbnail alt={photo.description ?? t("memoryForm", "photoReference")} mediaUrl={photo.thumbnailUrl ?? photo.url} />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-2"
+                    aria-label={t("memoryForm", "expandPhoto")}
+                    onClick={() => setPhotoViewerIndex(index)}
+                  >
+                    <Expand className="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
+                <div className="space-y-2 p-3 text-sm">
+                  <p className="font-medium">{photo.description || photo.externalId || t("memoryForm", "photoReference")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {photo.providerStatus === "expired" || photo.providerStatus === "unavailable"
+                      ? t("memoryForm", "photoUnavailable")
+                      : t("memoryForm", "photoReferenceSaved")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {photosStatus.state === "permission-required" ? t("memoryForm", "photosPermissionRequired") : photosStatus.label}. {t("memoryForm", "memoryWorksWithoutPhotos")}
+          </p>
+        )}
       </section>
+
+      {photoViewerIndex !== null && memory.photos?.length ? (
+        <PhotoViewerDialog
+          currentIndex={photoViewerIndex}
+          onChangeIndex={setPhotoViewerIndex}
+          onClose={() => setPhotoViewerIndex(null)}
+          photos={memory.photos}
+        />
+      ) : null}
     </div>
   );
 }

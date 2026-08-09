@@ -390,7 +390,7 @@ Acceptance criteria:
 
 ## Feature Track 9: Google Photos Picker
 
-Status: Not started
+Status: Complete
 
 Goal:
 
@@ -398,12 +398,12 @@ Allow users to select Google Photos media and store references or metadata witho
 
 Phases:
 
-- [ ] Phase 1: Complete Google Photos service boundary.
-- [ ] Phase 2: Add progressive permission and picker launch flow.
-- [ ] Phase 3: Store selected media references in `PhotoReference`.
-- [ ] Phase 4: Attach photo references to memories.
-- [ ] Phase 5: Handle expired or unavailable media gracefully.
-- [ ] Phase 6: Add provider refresh strategy if needed.
+- [x] Phase 1: Complete Google Photos service boundary.
+- [x] Phase 2: Add progressive permission and picker launch flow.
+- [x] Phase 3: Store selected media references in `PhotoReference`.
+- [x] Phase 4: Attach photo references to memories.
+- [x] Phase 5: Handle expired or unavailable media gracefully.
+- [x] Phase 6: Add provider refresh strategy if needed.
 
 Existing target type:
 
@@ -588,11 +588,11 @@ Acceptance criteria:
 
 ## Recommended Implementation Order
 
-1. Natural-language search. (FT 1)
-2. Multi-language support for English, Portuguese, French, and Spanish. (FT 2)
-3. Relationship graph visualization. (FT 12)
-4. Export/import. (FT 14)
-5. Google Photos Picker. (FT 9)
+1. Natural-language search. (FT 1) ✅
+2. Multi-language support for English, Portuguese, French, and Spanish. (FT 2) ✅
+3. Relationship graph visualization. (FT 12) ✅
+4. Export/import. (FT 14) ✅
+5. Google Photos Picker. (FT 9) ✅
 6. Google Calendar integration. (FT 7)
 7. Selected Google Contacts import, then full synchronization. (FT 8)
 8. Smart reminders. (FT 6)
@@ -630,3 +630,4 @@ Use this checklist before marking any deferred feature complete.
 ## Further features
 - Improve the label structure from memories to mirror the structure used on the people group labels 
 - focused bottom navbar on sm devices. Only have home, people, memories and upcoming. all other under a ... button that when clicked will open a box with the other options. Also, hide the page where the user is instead of highlight
+- Integrate with other platforms (Microsoft and iCloud) for connect for photos and contacts and login.

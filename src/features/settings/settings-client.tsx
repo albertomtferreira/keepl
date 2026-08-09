@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LanguageSettings } from "@/features/localization/language-settings";
@@ -23,12 +24,14 @@ import {
   type GoogleIntegrationStatus,
 } from "@/services/google/integration-status";
 import { getGoogleContactsIntegrationStatus } from "@/services/google/contacts";
-import { getGooglePhotosIntegrationStatus } from "@/services/google/photos";
+import { clearGooglePhotosAccess, getGooglePhotosIntegrationStatus } from "@/services/google/photos";
+import { connectGooglePhotos } from "@/services/google/photos/auth";
 
 type SettingsSection = {
   title: string;
   icon: LucideIcon;
   status: GoogleIntegrationStatus;
+  action?: "data" | "photos";
 };
 
 const neutralStatus: GoogleIntegrationStatus = {
@@ -52,6 +55,9 @@ const stateStyles = {
 export function SettingsClient() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const [photosStatus, setPhotosStatus] = useState(() => getGooglePhotosIntegrationStatus());
+  const [photosBusy, setPhotosBusy] = useState(false);
+  const [photosError, setPhotosError] = useState<string | null>(null);
   const provider = user?.providerData.find((profile) => profile.providerId === "google.com");
   const googleStatus: GoogleIntegrationStatus = provider
     ? {
@@ -89,10 +95,11 @@ export function SettingsClient() {
       title: t("settings", "photos"),
       icon: Camera,
       status: localizePermissionStatus(
-        getGooglePhotosIntegrationStatus(),
+        photosStatus,
         t("settings", "photosPermission"),
         t("settings", "photosPermissionDetail"),
       ),
+      action: "photos",
     },
     {
       title: t("settings", "calendar"),
@@ -119,8 +126,29 @@ export function SettingsClient() {
       title: t("settings", "data"),
       icon: Database,
       status: localizedNeutralStatus,
+      action: "data",
     },
   ];
+
+  async function connectPhotos() {
+    setPhotosBusy(true);
+    setPhotosError(null);
+
+    try {
+      await connectGooglePhotos(user);
+      setPhotosStatus(getGooglePhotosIntegrationStatus());
+    } catch {
+      setPhotosError(t("settings", "photosConnectError"));
+    } finally {
+      setPhotosBusy(false);
+    }
+  }
+
+  function disconnectPhotos() {
+    clearGooglePhotosAccess();
+    setPhotosStatus(getGooglePhotosIntegrationStatus());
+    setPhotosError(null);
+  }
 
   return (
     <div className="space-y-5">
@@ -151,7 +179,14 @@ export function SettingsClient() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.map((section) => (
-          <IntegrationCard key={section.title} section={section} />
+          <IntegrationCard
+            key={section.title}
+            section={section}
+            photosBusy={photosBusy}
+            photosError={photosError}
+            onConnectPhotos={connectPhotos}
+            onDisconnectPhotos={disconnectPhotos}
+          />
         ))}
       </div>
 
@@ -182,7 +217,19 @@ function localizePermissionStatus(status: GoogleIntegrationStatus, label: string
   };
 }
 
-function IntegrationCard({ section }: { section: SettingsSection }) {
+function IntegrationCard({
+  onConnectPhotos,
+  onDisconnectPhotos,
+  photosBusy,
+  photosError,
+  section,
+}: {
+  section: SettingsSection;
+  photosBusy: boolean;
+  photosError: string | null;
+  onConnectPhotos: () => void;
+  onDisconnectPhotos: () => void;
+}) {
   const { t } = useI18n();
   const stateLabels = {
     connected: t("common", "connected"),
@@ -207,10 +254,24 @@ function IntegrationCard({ section }: { section: SettingsSection }) {
         </span>
       </div>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">{section.status.detail}</p>
-      {section.title === t("settings", "data") ? (
+      {section.action === "data" ? (
         <Button asChild variant="outline" size="sm" className="mt-4">
           <Link href="/export">{t("settings", "openDataTools")}</Link>
         </Button>
+      ) : null}
+      {section.action === "photos" ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {section.status.state === "connected" ? (
+            <Button type="button" variant="outline" size="sm" onClick={onDisconnectPhotos}>
+              {t("settings", "disconnectPhotos")}
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={onConnectPhotos} disabled={photosBusy}>
+              {photosBusy ? t("settings", "connecting") : t("settings", "connectPhotos")}
+            </Button>
+          )}
+          {photosError ? <p className="basis-full text-sm text-destructive">{photosError}</p> : null}
+        </div>
       ) : null}
     </section>
   );

@@ -14,4 +14,6 @@ export type PhotoReference = {
   description?: string;
   capturedAt?: FirestoreTimestamp;
   attribution?: string;
+  providerStatus?: "available" | "expired" | "unavailable";
+  lastCheckedAt?: FirestoreTimestamp;
 };
