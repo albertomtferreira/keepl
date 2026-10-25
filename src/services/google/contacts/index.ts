@@ -4,6 +4,7 @@ export function getGoogleContactsIntegrationStatus(): GoogleIntegrationStatus {
   return {
     state: "permission-required",
     label: "Google Contacts needs permission",
-    detail: "Keepl has a service boundary ready, but contact access is not requested during sign-in.",
+    detail:
+      "Connect explicitly to import selected contacts and review updates. Contact access is not requested during sign-in.",
   };
 }

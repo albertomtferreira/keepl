@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { useI18n } from "@/lib/i18n/i18n-context";
 
 type PageHeaderKey =
+  | "privacy"
+  | "contacts"
   | "home"
   | "people"
   | "newPerson"

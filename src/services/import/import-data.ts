@@ -65,6 +65,8 @@ export async function previewKeeplImport(
         }
 
         if (
+          (collection === "people" &&
+            existing.people.externalKeys.has(contactReferenceKey(record))) ||
           hasNaturalKeyDuplicate(
             collection,
             record,
@@ -360,7 +362,12 @@ async function loadExisting(ownerId: string) {
   ]);
 
   return {
-    people: toExistingInfo(people, (record) => record.displayName),
+    people: {
+      ...toExistingInfo(people, (record) => record.displayName),
+      externalKeys: new Set(
+        people.map((record) => contactReferenceKey(record)).filter(Boolean),
+      ),
+    },
     groups: toExistingInfo(groups, (record) => record.name),
     relationships: toExistingInfo(
       relationships,
@@ -431,4 +438,13 @@ function getNaturalKey(
     case "reminders":
       return text(record.title);
   }
+}
+
+function contactReferenceKey(record: object) {
+  const link = (
+    record as { googleContact?: { accountId?: string; resourceName?: string } }
+  ).googleContact;
+  return link?.accountId && link?.resourceName
+    ? JSON.stringify([link.accountId, link.resourceName])
+    : "";
 }

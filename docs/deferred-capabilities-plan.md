@@ -25,6 +25,7 @@ The local assessment passed lint, TypeScript, 33 tests, and the production build
 | Export/import (FT 14)                                                                              | Implemented; H1 local checks passed                                        | H6 deployed verification          |
 | Google Photos (FT 9)                                                                               | Hardening required; picker, viewing, and download code exists              | Stages H2 and H6                     |
 | Reminders and PWA                                                                                  | Implemented foundation; notification delivery remains planned              | Stages H6 and R3                     |
+| Google Contacts (FT 8) | Selected import and manual refresh implemented | Live-provider and deployed-rules verification |
 | Other feature tracks                                                                               | Planned                                                                    | Product stages below                 |
 
 ## Delivery Sequence
@@ -209,6 +210,8 @@ Exit gate: agreed UX flows work at mobile and desktop sizes, in four locales, wi
 ### R2: Calendar and Contacts
 
 Deliver FT 7 first: service boundary, explicit permission, one chosen event, recurrence, then disconnect/revoke. Next deliver selected-contact import under FT 8 with preview, matching, and field-level choices before adding one-way refresh. Two-way sync remains a separate decision.
+
+Personal-trial exception (2026-10-25): the user authorized FT 8 selected-contact import and user-triggered one-way refresh ahead of the usual H6/R1/FT 7 sequence. This does not close those release gates or authorize background/two-way synchronization. Implementation and verification are recorded under FT 8.
 
 Exit gate: permissions are progressive; duplicate calendar events and destructive contact overwrites are prevented; denied/revoked access is recoverable; owner-scoped external metadata is portable without credentials. Settings must show real capability and connection state.
 
@@ -606,7 +609,7 @@ Acceptance criteria:
 
 ## Feature Track 8: Full Google Contacts Synchronization
 
-Status: Planned
+Status: Selected-contact import and manual one-way refresh implemented; local checks passed (2026-10-25); real-provider verification remains open
 
 Goal:
 
@@ -614,19 +617,32 @@ Move beyond selected contact import into explicit, user-controlled contact synch
 
 Phases:
 
-- [ ] Phase 1: Complete selected-contact import first.
-- [ ] Phase 2: Define `externalContactId` and sync metadata on imported people.
-- [ ] Phase 3: Add deduplication review UI.
-- [ ] Phase 4: Add one-way refresh from Google Contacts.
-- [ ] Phase 5: Add field-level conflict review.
+- [x] Phase 1: Complete selected-contact import first.
+- [x] Phase 2: Define account-scoped external contact references on imported/linked people.
+- [x] Phase 3: Add deduplication review UI.
+- [x] Phase 4: Add user-triggered one-way refresh from Google Contacts.
+- [x] Phase 5: Add explicit field-level review before every update; automatic conflict resolution remains deferred.
 - [ ] Phase 6: Decide whether two-way sync is in scope.
 
-Possible fields on `people`:
+Personal-trial implementation decisions (2026-10-25):
+
+- Entry point: Settings → Google Contacts → Manage contacts (`/contacts`). Request read-only Contacts permission only from the connect action. Credentials stay in memory for at most 50 minutes, are bound to the Keepl owner and linked Google account, and are cleared on sign-out, owner changes, local disconnect, expiry, and denied provider requests. Reloading requires reconnection. Provider calls use bearer headers, no-store and fixed Google origins; no provider token is exported.
+- Import: load contacts in pages of 100, search loaded pages, explicitly choose new records or an existing person, and review selected fields before confirming each person. Normalized email/phone/name matches are suggestions, never automatic identity decisions. New-person fields start selected; existing-person fields start unchecked. The display name is mandatory for new records.
+- Refresh: fetch only explicitly linked contacts, individually or as a review queue for all linked active people. Compare current Keepl values with Google and require field-level approval. Unchecked fields, notes, relationships, groups, memories, and other authored information remain intact. Missing Google contacts never delete Keepl people. No sync cursors, background jobs, refresh tokens, automatic merges, Google writes, or personal photo binaries are introduced.
+- Identity and retry: portable `Person.googleContact` contains the stable Google account ID and People API resource name; existing `sourceId` is populated for newly imported people. New-person IDs are deterministic per Keepl owner/account/contact. Firestore transactions reject changed previews, foreign records and pending deletions. Derived `googleContactLinks` claims prevent competing tabs from linking a contact to different records. Claims contain only owner/person IDs, are not user-authored portable records, and can be rebuilt from portable references. Stale claims can be reassigned only after the previous person has been deleted. Restored references require reconnecting the same Google account and explicit review before any write.
+- Portability: optional reference fields remain compatible with legacy v1 backups. Export allowlists and strict import validation preserve safe references, reject embedded secrets/malformed references, retain current-owner reassignment, and flag existing account/contact links as duplicate candidates even if names differ. Derived claims and provider credentials are excluded.
+- Local disconnect preserves saved people and links. The explicit revoke action calls Google's revocation endpoint; its UI explains that other Google access granted to Keepl, including Photos, may also be affected.
+- Setup and manual verification: see [Google Contacts trial guide](./google-contacts.md). Live consent/provider behavior, actual account switching and deployed rules remain separate verification gates.
+- Local evidence (2026-10-25): lint, TypeScript, 83 unit tests and the production build passed. The Firestore emulator suite passed 16 tests, including actual Contacts transaction retries, field preservation, stale previews, competing links, deletion/reimport recovery and ownership/rule checks. The Contacts browser flow passed on desktop Chromium and mobile WebKit against Firebase emulators and mocked People API responses: explicit selection/confirmation, unselected contacts excluded, reviewed email refresh while retaining the name, unavailable-provider preservation, local disconnect and four-language page/Settings checks without horizontal overflow. These checks do not establish real Google consent, deployed rules or live provider behavior.
+
+Implemented fields on `people`:
 
 - `source`
-- `externalContactId`
-- `externalUpdatedAt`
-- `lastSyncedAt`
+- `sourceId` for new Google imports
+- `googleContact.accountId`
+- `googleContact.resourceName`
+
+Existing `updatedAt` records confirmed writes. Per-field baselines, provider modification timestamps and incremental-sync metadata remain deferred because every update is explicitly reviewed.
 
 Acceptance criteria:
 

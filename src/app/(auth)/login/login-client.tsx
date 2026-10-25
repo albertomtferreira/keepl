@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n/i18n-context";
 import { ArrowRight, HeartHandshake, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -84,6 +85,11 @@ export function LoginClient() {
             </p>
           </div>
         </div>
+        <footer className="text-sm text-muted-foreground">
+          <Link href="/privacy" className="underline underline-offset-4">
+            {t("privacy", "title")}
+          </Link>
+        </footer>
       </section>
     </main>
   );

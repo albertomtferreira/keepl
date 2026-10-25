@@ -115,6 +115,16 @@ export const portableSchemas = {
       photo: photo.optional(),
       source: z.enum(["manual", "google-contacts", "import", "seed"]),
       sourceId: text.optional(),
+      googleContact: z
+        .object({
+          accountId: text.min(1).max(256),
+          resourceName: z
+            .string()
+            .regex(/^people\/[a-zA-Z0-9_-]+$/)
+            .max(256),
+        })
+        .strict()
+        .optional(),
       archivedAt: z.union([z.iso.datetime(), timestamp]).nullable().optional(),
     })
     .strict(),

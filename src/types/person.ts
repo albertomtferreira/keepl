@@ -1,11 +1,11 @@
-import type { FlexibleDate, SocialProfile, UserOwnedEntity } from "@/types/common";
+import type {
+  FlexibleDate,
+  SocialProfile,
+  UserOwnedEntity,
+} from "@/types/common";
 import type { PhotoReference } from "@/types/photos";
 
-export type PersonSource =
-  | "manual"
-  | "google-contacts"
-  | "import"
-  | "seed";
+export type PersonSource = "manual" | "google-contacts" | "import" | "seed";
 
 export type ContactPoint = {
   label?: string;
@@ -26,5 +26,7 @@ export type Person = UserOwnedEntity & {
   photo?: PhotoReference;
   source: PersonSource;
   sourceId?: string;
+  /** Portable reference only. Restoring a backup never grants provider access. */
+  googleContact?: { accountId: string; resourceName: string };
   archivedAt?: Date | null;
 };

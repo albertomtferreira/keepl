@@ -28,6 +28,10 @@ function fixture(): KeeplExportData {
         id: "p",
         displayName: "Alex",
         source: "manual",
+        googleContact: {
+          accountId: "google-account",
+          resourceName: "people/contact1",
+        },
         groupIds: ["g"],
         birthday: { precision: "month-day", month: 2, day: 29 },
         archivedAt: "2026-01-01T00:00:00.000Z",
@@ -191,6 +195,19 @@ it("round-trips every collection through export, preview, remapping and import w
       plan.records.map((row) => [row.collection, row.record]),
     );
     assert.deepEqual(byCollection.people.groupIds, [byCollection.groups.id]);
+    assert.deepEqual(
+      byCollection.people.googleContact,
+      data.collections.people[0].googleContact,
+    );
+    const renamed = structuredClone(parsed);
+    renamed.collections.people[0].id = "renamed-copy";
+    renamed.collections.people[0].displayName = "Different name";
+    const renamedPreview = await service.previewKeeplImport("current", renamed);
+    assert.ok(
+      renamedPreview.duplicates.some(
+        (d) => d.id === "renamed-copy" && d.reason === "natural-key",
+      ),
+    );
     assert.deepEqual(byCollection.memories.peopleIds, [byCollection.people.id]);
     assert.equal(
       byCollection.reminders.importantDateId,

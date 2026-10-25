@@ -25,6 +25,20 @@ service cloud.firestore {
         && userId == request.auth.uid;
     }
 
+    // Derived uniqueness claims for Google contact links; no credentials or contact data.
+    match /googleContactLinks/{claimId} {
+      allow get: if isSignedIn() && (!exists(/databases/$(database)/documents/googleContactLinks/$(claimId)) || ownsExistingDocument());
+      allow list, delete: if ownsExistingDocument();
+      allow create: if ownsIncomingDocument()
+        && request.resource.data.keys().hasOnly(['ownerId', 'personId'])
+        && getAfter(/databases/$(database)/documents/people/$(request.resource.data.personId)).data.ownerId == request.auth.uid;
+      allow update: if ownsExistingDocument() && ownsIncomingDocument()
+        && request.resource.data.keys().hasOnly(['ownerId', 'personId'])
+        && (request.resource.data.personId == resource.data.personId
+          || (!exists(/databases/$(database)/documents/people/$(resource.data.personId))
+            && getAfter(/databases/$(database)/documents/people/$(request.resource.data.personId)).data.ownerId == request.auth.uid));
+    }
+
     match /{collection}/{documentId} {
       allow create: if collection in [
         'people',

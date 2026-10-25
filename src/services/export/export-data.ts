@@ -55,6 +55,7 @@ export async function exportKeeplData(
     exportedAt: new Date().toISOString(),
     collections: {
       people: people.map((record) =>
+        // Includes safe googleContact references, never credentials or derived link claims.
         portableSchemas.people.strip().parse(toExportRecord(record)),
       ),
       groups: groups.map((record) =>

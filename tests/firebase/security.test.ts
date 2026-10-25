@@ -31,6 +31,8 @@ import type { Person } from "../../src/types";
 
 import { commitImportChunk } from "../../src/services/import/import-data";
 import { searchLocalRecords } from "../../src/lib/search/local-search";
+import { commitContactReview } from "../../src/services/google/contacts/write";
+import { contactFields } from "../../src/services/google/contacts/model";
 
 let env: RulesTestEnvironment;
 const collections = [
@@ -58,6 +60,149 @@ beforeEach(async () => {
 });
 after(async () => {
   await env.cleanup();
+});
+
+it("Contacts transactions are retry-safe, preserve unselected fields and reject stale previews", async () => {
+  const alice = env.authenticatedContext("alice").firestore();
+  const access = {
+    ownerId: "alice",
+    accountId: "google",
+    accessToken: "unused",
+    expiresAt: Date.now() + 10000,
+  };
+  const contact = {
+    resourceName: "people/c1",
+    values: {
+      displayName: "Google name",
+      firstName: "Google",
+      emails: [{ value: "a@example.com" }],
+    },
+  };
+  const create = { contact, target: null, fields: [...contactFields] };
+  const id = await commitContactReview(
+    access,
+    create,
+    alice as never,
+    () => {},
+  );
+  await commitContactReview(access, create, alice as never, () => {});
+  assert.equal(
+    (
+      await getDocs(
+        query(collection(alice, "people"), where("ownerId", "==", "alice")),
+      )
+    ).size,
+    1,
+  );
+  const ref = doc(alice, "people", id);
+  await updateDoc(ref, {
+    displayName: "Local name",
+    nickname: "Private nickname",
+  });
+  const target = { id, ...(await getDoc(ref)).data() } as Person;
+  await commitContactReview(
+    access,
+    {
+      contact: {
+        ...contact,
+        values: { displayName: "New Google name", firstName: "Updated" },
+      },
+      target,
+      fields: ["firstName"],
+    },
+    alice as never,
+    () => {},
+  );
+  const saved = (await getDoc(ref)).data()!;
+  assert.equal(saved.displayName, "Local name");
+  assert.equal(saved.firstName, "Updated");
+  assert.equal(saved.nickname, "Private nickname");
+  await assert.rejects(
+    commitContactReview(
+      access,
+      { contact, target, fields: ["displayName"] },
+      alice as never,
+      () => {},
+    ),
+  );
+  const bob = env.authenticatedContext("bob").firestore();
+  await assert.rejects(
+    commitContactReview(
+      { ...access, ownerId: "bob" },
+      {
+        contact,
+        target: { ...target, ownerId: "bob" },
+        fields: ["displayName"],
+      },
+      bob as never,
+      () => {},
+    ),
+  );
+  await assertFails(getDoc(doc(bob, "googleContactLinks", id)));
+  await assertFails(
+    setDoc(doc(bob, "googleContactLinks", "forged"), {
+      ownerId: "bob",
+      personId: id,
+    }),
+  );
+  await assertFails(
+    setDoc(doc(alice, "googleContactLinks", "secret"), {
+      ownerId: "alice",
+      personId: id,
+      accessToken: "secret",
+    }),
+  );
+});
+
+it("Contacts uniqueness claims prevent competing links and recover after person deletion", async () => {
+  const alice = env.authenticatedContext("alice").firestore();
+  const access = {
+    ownerId: "alice",
+    accountId: "google",
+    accessToken: "unused",
+    expiresAt: Date.now() + 10000,
+  };
+  const contact = {
+    resourceName: "people/c2",
+    values: { displayName: "Google name" },
+  };
+  for (const id of ["manual1", "manual2"])
+    await setDoc(doc(alice, "people", id), {
+      ownerId: "alice",
+      displayName: "Manual",
+      source: "manual",
+    });
+  const targets = await Promise.all(
+    ["manual1", "manual2"].map(
+      async (id) =>
+        ({ id, ...(await getDoc(doc(alice, "people", id))).data() }) as Person,
+    ),
+  );
+  const results = await Promise.allSettled(
+    targets.map((target) =>
+      commitContactReview(
+        access,
+        { contact, target, fields: [] },
+        alice as never,
+        () => {},
+      ),
+    ),
+  );
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+  const winner = results.find(
+    (r) => r.status === "fulfilled",
+  ) as PromiseFulfilledResult<string>;
+  await deleteDoc(doc(alice, "people", winner.value));
+  const id = await commitContactReview(
+    access,
+    { contact, target: null, fields: ["displayName"] },
+    alice as never,
+    () => {},
+  );
+  assert.equal(
+    (await getDoc(doc(alice, "people", id))).data()?.displayName,
+    "Google name",
+  );
 });
 
 describe("deployed rule source against Firestore", () => {

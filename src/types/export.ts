@@ -1,3 +1,5 @@
+// v1 accepts optional Person.googleContact references. Credentials and derived
+// googleContactLinks uniqueness claims are never portable collections.
 export const keeplExportSchemaVersion = 1;
 
 export type KeeplExportCollection =

@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  contactsSnapshot,
+  subscribeContacts,
+  getContactsAccess,
+} from "@/services/google/contacts/access";
 
 import { Button } from "@/components/ui/button";
 import { LifecycleReview } from "@/features/lifecycle/lifecycle-review";
@@ -36,7 +41,7 @@ type SettingsSection = {
   title: string;
   icon: LucideIcon;
   status: GoogleIntegrationStatus;
-  action?: "data" | "photos";
+  action?: "data" | "photos" | "contacts";
 };
 
 const neutralStatus: GoogleIntegrationStatus = {
@@ -63,6 +68,13 @@ const stateStyles = {
 export function SettingsClient() {
   const { user } = useAuth();
   const { t } = useI18n();
+  useSyncExternalStore(subscribeContacts, contactsSnapshot, () => 0);
+  let contactsConnected = false;
+  try {
+    if (user) contactsConnected = !!getContactsAccess(user.uid);
+  } catch {
+    /* No session credential. */
+  }
   const [photosStatus, setPhotosStatus] = useState(() =>
     getGooglePhotosIntegrationStatus(),
   );
@@ -104,11 +116,18 @@ export function SettingsClient() {
     {
       title: t("settings", "contacts"),
       icon: ContactRound,
-      status: localizePermissionStatus(
-        getGoogleContactsIntegrationStatus(),
-        t("settings", "contactsPermission"),
-        t("settings", "contactsPermissionDetail"),
-      ),
+      action: "contacts",
+      status: contactsConnected
+        ? {
+            state: "connected",
+            label: t("contactsSync", "connected"),
+            detail: t("contactsSync", "intro"),
+          }
+        : localizePermissionStatus(
+            getGoogleContactsIntegrationStatus(),
+            t("settings", "contactsPermission"),
+            t("settings", "contactsPermissionDetail"),
+          ),
     },
     {
       title: t("settings", "photos"),
@@ -202,6 +221,12 @@ export function SettingsClient() {
       </section>
 
       <LanguageSettings />
+      <Link
+        href="/privacy"
+        className="inline-block text-sm underline underline-offset-4"
+      >
+        {t("privacy", "title")}
+      </Link>
       <LifecycleReview key={user?.uid} />
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -303,6 +328,11 @@ function IntegrationCard({
       {section.action === "data" ? (
         <Button asChild variant="outline" size="sm" className="mt-4">
           <Link href="/export">{t("settings", "openDataTools")}</Link>
+        </Button>
+      ) : null}
+      {section.action === "contacts" ? (
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href="/contacts">{t("contactsSync", "manage")}</Link>
         </Button>
       ) : null}
       {section.action === "photos" ? (
