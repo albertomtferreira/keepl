@@ -341,6 +341,7 @@ export function PersonForm({ person }: PersonFormProps) {
               value={newGroupName}
               onChange={(event) => setNewGroupName(event.target.value)}
               className={inputClassName}
+              aria-label={t("personForm", "newGroupName")}
               placeholder={t("personForm", "newGroupName")}
             />
             <Button

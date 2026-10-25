@@ -104,6 +104,7 @@ export function MemoriesListClient() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            aria-label={t("memoriesPage", "searchPlaceholder")}
             placeholder={t("memoriesPage", "searchPlaceholder")}
             className="h-10 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />

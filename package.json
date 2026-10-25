@@ -15,7 +15,8 @@
     "test:rules": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only firestore \"tsx --test tests/firebase/*.test.ts\"",
     "test:e2e": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only auth,firestore \"playwright test\"",
     "build:test": "node scripts/test-env.mjs node_modules/next/dist/bin/next build --webpack",
-    "test:benchmark": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only firestore \"tsx tests/firebase/benchmark.ts\""
+    "test:benchmark": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only firestore \"tsx tests/firebase/benchmark.ts\"",
+    "verify:firebase": "node scripts/verify-firebase.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -36,6 +37,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",

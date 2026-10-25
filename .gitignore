@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-test/
 /out/
 /public/sw.js
 /public/workbox-*.js
@@ -49,3 +50,5 @@ next-env.d.ts
 /ui-debug.log
 /playwright-report/
 /test-results/
+
+/public/worker-*.js

@@ -394,7 +394,7 @@
   },
   "offline": {
     "title": "Está offline",
-    "description": "O Keepl pode abrir a aplicação instalada. Volte a ligar-se para atualizar pessoas, memórias, datas e lembretes.",
+    "description": "Volte a ligar-se para ver ou editar as suas pessoas, memórias, datas e lembretes guardados. A edição offline não é suportada.",
     "home": "Voltar ao início"
   },
   "searchResults": {

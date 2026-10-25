@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
+import { postLoginPath } from "@/lib/auth/post-login-path";
 
 export function LoginClient() {
   const { t } = useI18n();
@@ -15,7 +16,7 @@ export function LoginClient() {
   const searchParams = useSearchParams();
   const [error, setError] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
-  const next = searchParams.get("next") || "/home";
+  const next = postLoginPath(searchParams.get("next"));
 
   useEffect(() => {
     if (!loading && user) {
@@ -68,7 +69,7 @@ export function LoginClient() {
               ) : (
                 <ArrowRight className="size-4" aria-hidden="true" />
               )}
-              Continue with Google
+              {t("login", "continue")}
             </Button>
           </div>
 

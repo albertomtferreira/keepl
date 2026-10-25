@@ -344,3 +344,26 @@ it("intended profile, recent, membership and scheduled-reminder queries are owne
     getDoc(doc(env.unauthenticatedContext().firestore(), "people", "missing")),
   );
 });
+
+it("profile locale writes preserve identity and reject missing/foreign profiles", async () => {
+  const { UserProfilesRepository } =
+    await import("../../src/repositories/users");
+  const aliceDb = env.authenticatedContext("alice").firestore();
+  await setDoc(doc(aliceDb, "users", "alice"), {
+    ownerId: "alice",
+    displayName: "Authored name",
+  });
+  const alice = new UserProfilesRepository(aliceDb as never);
+  for (const locale of ["pt", "fr", "es", "en"]) {
+    await alice.updateLocale("alice", locale);
+    const profile = (await getDoc(doc(aliceDb, "users", "alice"))).data()!;
+    assert.equal(profile.locale, locale);
+    assert.equal(profile.ownerId, "alice");
+    assert.equal(profile.displayName, "Authored name");
+  }
+  const bob = new UserProfilesRepository(
+    env.authenticatedContext("bob").firestore() as never,
+  );
+  await assert.rejects(bob.updateLocale("alice", "es"));
+  await assert.rejects(bob.updateLocale("bob", "pt"));
+});

@@ -56,7 +56,7 @@ const permissionStatus = (
 
 const stateStyles = {
   connected: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  "not-connected": "border-border bg-secondary text-muted-foreground",
+  "not-connected": "border-border bg-secondary text-secondary-foreground",
   "permission-required": "border-amber-200 bg-amber-50 text-amber-800",
 };
 

@@ -394,7 +394,7 @@
   },
   "offline": {
     "title": "Vous êtes hors ligne",
-    "description": "Keepl peut ouvrir son interface installée. Reconnectez-vous pour actualiser personnes, souvenirs, dates et rappels.",
+    "description": "Reconnectez-vous pour consulter ou modifier vos personnes, souvenirs, dates et rappels enregistrés. La modification hors ligne n'est pas prise en charge.",
     "home": "Retour à l’accueil"
   },
   "searchResults": {

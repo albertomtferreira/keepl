@@ -10,14 +10,14 @@ npm run typecheck
 npm test
 npm run test:rules
 npm run build:test
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run test:e2e
 npm run test:benchmark
 ```
 
-On Linux, use `npx playwright install --with-deps chromium`. Run emulator commands sequentially: they share ports 8080/9099 and the isolated `demo-keepl` project. The suites discard emulator state; never point them at a real project. No Firebase login, service account, OAuth secret, or live account is needed. The environment wrapper supplies fake public configuration before Next.js loads local env files. Browser tests use a production build, real Firebase SDKs, emulator Google sign-in, real repositories and checked-in rules; they do not bypass the app's auth provider. `build:test` creates an emulator-only build: rebuild with normal deployment configuration before releasing it. The client rejects emulator mode for any project other than `demo-keepl`. Browser configuration also checks a build-ID marker written only by `build:test`, refusing to launch against a stale or live-configured build.
+On Linux, use `npx playwright install --with-deps chromium webkit`. Run emulator commands sequentially: they share ports 8080/9099 and the isolated `demo-keepl` project. The suites discard emulator state; never point them at a real project. No Firebase login, service account, OAuth secret, or live account is needed. The environment wrapper supplies fake public configuration before Next.js loads local env files. Browser tests use a production build, real Firebase SDKs, emulator Google sign-in, real repositories and checked-in rules; they do not bypass the app's auth provider. `build:test` creates an emulator-only build under `.next-test`, separate from the running development server: rebuild with normal deployment configuration before releasing it. The client rejects emulator mode for any project other than `demo-keepl`. Browser configuration also checks a build-ID marker written only by `build:test`, refusing to launch against a stale or live-configured build.
 
-[CI](../.github/workflows/assurance.yml) runs lint, typecheck, all existing H1-H4 unit regressions, emulator tests, production compilation with fake configuration, and Chromium flows. Failure traces contain only isolated test data. Firebase popup bootstrapping loads the public Google API JavaScript; no live OAuth flow or account is used. Optional emulator widget font/style CDNs are blocked. Emulator denial logs are expected assertions, not failed tests. External Google consent, Photos media delivery, installed PWA/device behavior, and deployed indexes/rules remain H6 checks. CI configuration is implemented locally; a hosted CI run is separate evidence.
+[CI](../.github/workflows/assurance.yml) runs lint, typecheck, all existing H1-H4 unit regressions, emulator tests, production compilation with fake configuration, and Chromium/mobile-WebKit flows. Failure traces contain only isolated test data. Firebase popup bootstrapping loads the public Google API JavaScript; no live OAuth flow or account is used. Optional emulator widget font/style CDNs are blocked. Emulator denial logs are expected assertions, not failed tests. External Google consent, Photos media delivery, installed PWA/device behavior, and deployed indexes/rules remain H6 checks. CI configuration is implemented locally; a hosted CI run is separate evidence.
 
 ## Rules and indexes
 
@@ -77,3 +77,11 @@ Local validation on 2026-10-25 passed lint, typecheck, 75 unit tests, 13 emulato
 ## Real-project index rollout verification (2026-10-25)
 
 Deployed the index manifest to `keepl-9bfc7`, retaining its existing groups ownerId/name index. Confirmed all 12 configured composite indexes reached READY through the Firestore Admin API. Verified `/home`, `/memories`, and `/upcoming` on the local development app with the existing authenticated session and real Firestore data: all three completed loading without the partial-read error; memory cards and scheduled reminders rendered. This is evidence for the index rollout and these read paths only; the remaining H6 environment, deployed rules, provider and device checks remain open.
+
+## H6 verification extensions
+
+The production browser suite runs the complete eight-collection export/restore journey under Chromium and iPhone-preset WebKit, plus localized public-shell layout/keyboard/axe checks, authenticated mobile routes/forms, and production service-worker offline/sign-out/account-transition checks. WebKit emulation does not establish physical iOS Safari installation or VoiceOver behavior.
+
+`npm run verify:firebase -- PROJECT ORIGIN` is a read-only release gate using the pinned Firebase CLI's authenticated API client. It checks public HTTP assets without sending Firebase credentials, and reports only metadata/booleans. A successful deployment command alone does not establish that indexes are READY or that the hosted app includes the current manifest/worker. The gate deliberately fails for stale hosted assets even when Firebase configuration passes.
+
+The worker caches immutable same-origin static assets and the generic precached offline page. Documents, RSC payloads, API responses, provider media and cross-origin data are network-only. A custom activation handler removes named legacy runtime caches from the previous policy. Browser tests seed a legacy page cache, verify its removal, create a synthetic private record, sign out offline, navigate to the fallback, and sign into another account after reconnecting. No offline write queue or supported offline editing is introduced.

@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { testEnv } from "./scripts/test-env.mjs";
 
@@ -7,8 +7,8 @@ import { testEnv } from "./scripts/test-env.mjs";
 let testBuild = false;
 try {
   testBuild =
-    readFileSync(".next/BUILD_ID", "utf8") ===
-    readFileSync(".next/keepl-test-build", "utf8");
+    readFileSync(".next-test/BUILD_ID", "utf8") ===
+    readFileSync(".next-test/keepl-test-build", "utf8");
 } catch {
   testBuild = false;
 }
@@ -18,9 +18,23 @@ if (!testBuild)
   );
 export default defineConfig({
   testDir: "./tests/e2e",
+  projects: [
+    { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "webkit-mobile",
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "webkit",
+        // WebKit on Windows can hang closing a trace with live Firebase streams.
+        trace: process.platform === "win32" ? "off" : "retain-on-failure",
+        screenshot: "only-on-failure",
+      },
+    },
+  ],
   fullyParallel: false,
   workers: 1,
-  timeout: 120000,
+  timeout: 180000,
+  globalTimeout: 300000,
   expect: { timeout: 15000 },
   use: {
     actionTimeout: 10000,

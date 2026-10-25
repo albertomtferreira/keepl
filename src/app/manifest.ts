@@ -4,7 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Keepl",
     short_name: "Keepl",
-    description: "A private relationship and memory manager for keeping people close.",
+    description:
+      "A private relationship and memory manager for keeping people close.",
     id: "/home",
     start_url: "/home",
     scope: "/",
@@ -34,6 +35,18 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
     icons: [
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
       {
         src: "/icon.svg",
         sizes: "any",

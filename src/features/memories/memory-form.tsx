@@ -263,6 +263,7 @@ export function MemoryForm({
             <input
               value={personQuery}
               onChange={(event) => setPersonQuery(event.target.value)}
+              aria-label={t("memoryForm", "searchPeople")}
               placeholder={t("memoryForm", "searchPeople")}
               className={`${inputClassName} pl-9`}
             />

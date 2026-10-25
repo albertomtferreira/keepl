@@ -24,8 +24,9 @@ export const metadata: Metadata = {
     default: "Keepl",
     template: "%s | Keepl",
   },
-  description: "A private relationship and memory manager for keeping people close.",
-  manifest: "/manifest.json",
+  description:
+    "A private relationship and memory manager for keeping people close.",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Keepl",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/icon.svg",
-    apple: "/icon.svg",
+    apple: "/apple-touch-icon.png",
   },
 };
 

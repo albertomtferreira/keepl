@@ -394,7 +394,7 @@
   },
   "offline": {
     "title": "Sin conexión",
-    "description": "Keepl puede abrir su interfaz instalada. Reconecta para actualizar personas, recuerdos, fechas y recordatorios.",
+    "description": "Vuelve a conectarte para ver o editar tus personas, recuerdos, fechas y recordatorios guardados. No se admite la edición sin conexión.",
     "home": "Volver al inicio"
   },
   "searchResults": {

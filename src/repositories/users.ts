@@ -50,12 +50,8 @@ export class UserProfilesRepository {
   }
 
   async updateLocale(userId: string, locale: string) {
-    const existing = await this.get(userId);
-
-    if (!existing) {
-      throw new Error("profile-unavailable");
-    }
-
+    // updateDoc requires an existing profile; deployed rules enforce both the
+    // document UID and immutable ownership without an extra listener round trip.
     await updateDoc(this.ref(userId), {
       locale,
       ownerId: userId,

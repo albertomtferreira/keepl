@@ -394,7 +394,7 @@
   },
   "offline": {
     "title": "You are offline",
-    "description": "Keepl can still open its installed shell. Reconnect to refresh people, memories, dates, and reminders.",
+    "description": "Reconnect to view or edit your saved people, memories, dates, and reminders. Offline editing is not supported.",
     "home": "Return home"
   },
   "searchResults": {

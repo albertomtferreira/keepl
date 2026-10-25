@@ -128,6 +128,7 @@ export function PeopleListClient() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            aria-label={t("peoplePage", "searchPlaceholder")}
             placeholder={t("peoplePage", "searchPlaceholder")}
             className="h-10 w-full rounded-lg border bg-white pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
@@ -139,6 +140,7 @@ export function PeopleListClient() {
           </Link>
         </Button>
         <select
+          aria-label={t("peoplePage", "allGroups")}
           value={groupId}
           onChange={(event) => setGroupId(event.target.value)}
           className="h-10 rounded-lg border bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30"

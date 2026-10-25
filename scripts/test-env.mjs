@@ -19,7 +19,10 @@ if (process.argv[1]?.endsWith("test-env.mjs")) {
     process.argv[2]?.replaceAll("\\", "/").endsWith("/next/dist/bin/next") &&
     process.argv.includes("build")
   ) {
-    writeFileSync(".next/keepl-test-build", readFileSync(".next/BUILD_ID"));
+    writeFileSync(
+      ".next-test/keepl-test-build",
+      readFileSync(".next-test/BUILD_ID"),
+    );
   }
   process.exit(result.status ?? 1);
 }
