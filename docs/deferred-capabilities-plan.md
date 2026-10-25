@@ -1,6 +1,181 @@
-# Deferred Capabilities Implementation Plan
+# Keepl Roadmap
 
-This document tracks post-MVP capabilities deferred from `docs/implementation-plan.md`.
+This is the main source of truth for current status, priorities, release gates, and future work. The filename is retained so existing links keep working. The [original implementation plan](./implementation-plan.md) records the historical MVP milestones; it does not define the next work.
+
+Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1 implementation decisions and local verification evidence are recorded in its stage section.
+
+## Status and Evidence
+
+Use these statuses consistently:
+
+- **Implemented:** code exists; this does not imply deployed or end-to-end verified.
+- **Hardening required:** a feature exists but has known gaps below.
+- **Planned:** work has not started.
+- **Verified:** acceptance criteria passed, with dated evidence recorded here.
+- **Blocked:** record the dependency and what will unblock it.
+
+The local assessment passed lint, TypeScript, 33 tests, and the production build. Authenticated browser flows, deployed Firestore rules/indexes, provider permissions, and physical-device PWA behavior remain unverified. No checked-in CI workflow, browser test suite, or Firestore emulator security suite was found.
+
+| Area                                                                                               | Current status                                                             | Remaining gate                       |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
+| Core MVP: people, groups, relationships, notes, dates, memories, interactions, dashboard, settings | Implemented                                                                | Stages H4-H6                         |
+| Text search (FT 1)                                                                                 | Implemented; local matching and ranking, without AI language understanding | Stage H5                             |
+| Four-language support (FT 2)                                                                       | Hardening required; infrastructure exists, English strings remain          | Stage H3                             |
+| Relationship graph (FT 12)                                                                         | Implemented                                                                | Stage H6 device/accessibility checks |
+| Export/import (FT 14)                                                                              | Implemented; H1 local checks passed                                        | H5/H6 deployed verification           |
+| Google Photos (FT 9)                                                                               | Hardening required; picker, viewing, and download code exists              | Stages H2 and H6                     |
+| Reminders and PWA                                                                                  | Implemented foundation; notification delivery remains planned              | Stages H6 and R3                     |
+| Other feature tracks                                                                               | Planned                                                                    | Product stages below                 |
+
+## Delivery Sequence
+
+Complete H1-H6 before starting new provider or AI delivery work. H1 and H2 are the highest priorities. H3-H5 follow; H6 verifies the combined result. Stage R1 then addresses existing UX requests before integration expansion. Do one feature track at a time; prerequisites and acceptance evidence determine readiness, rather than a target date alone.
+
+| Stage | Scope                                                      | Status  | Dependency                           |
+| ----- | ---------------------------------------------------------- | ------- | ------------------------------------ |
+| H1    | Import validation, references, recovery                    | Implemented | Local checks below; deployed checks in H5/H6                       |
+| H2    | Google Photos credentials and account isolation            | Planned | Before new provider integrations     |
+| H3    | Complete localization                                      | Planned | Before broader beta                  |
+| H4    | Data lifecycle and honest failure states                   | Planned | Coordinate reference policy with H1  |
+| H5    | Automated checks, rules/index configuration, bounded reads | Planned | Cover H1-H4 fixes                    |
+| H6    | End-to-end beta and release verification                   | Planned | H1-H5                                |
+| R1    | Navigation, memory labels, remaining core UX               | Planned | H6                                   |
+| R2    | Calendar and selected Contacts import, then sync           | Planned | H6; H1/H2 patterns                   |
+| R3    | Smart reminders, then notification delivery                | Planned | H4/H5; reliable scheduling           |
+| R4    | AI entry, extraction, then semantic search                 | Planned | H1/H4/H5; privacy and cost decisions |
+| R5    | Additional providers and social integrations               | Planned | H2; provider feasibility review      |
+| R6    | Encrypted fields, then explicit sharing                    | Planned | Security designs; H1/H4/H5           |
+
+## Hardening Stages
+
+### H1: Import Integrity
+
+Problem: [import validation](../src/services/import/import-data.ts) checks the envelope and record ID but accepts arbitrary fields. Writes are sequential, and selection/duplicate handling does not reconcile references.
+
+- [x] H1.1 Define collection-specific schemas for every portable record, including required fields, enums, dates/timestamps, IDs, and references. Reject unsupported versions and malformed input before any write. Define migration behavior and test supported versions; reject others with a useful message.
+- [x] H1.2 Build a dependency-aware preview that detects duplicate IDs within the file and against existing records. Treat natural-key matches as reviewable candidates rather than assuming equal names identify the same person. Show conflicts and selection consequences before confirmation.
+- [x] H1.3 Define ID allocation/remapping for cross-account restores and collisions. Resolve references to selected or explicitly matched existing records; block or clearly omit unresolved dependencies. Never overwrite existing records silently.
+- [x] H1.4 Choose and document the write strategy for small and large imports. Use atomic batches where possible; otherwise provide accurate progress, failure reporting, and safe retry/resume without duplicates. Do not promise rollback across separate batches.
+- [x] H1.5 Test all collections through export/preview/import, malformed records, version handling, duplicate/conflict cases, selective dependencies, interrupted writes, and cross-account restore. Always assign the current user's ownerId and exclude secrets/transient state.
+
+Exit gate: invalid imports write nothing; a valid restore preserves domain fields and references; conflict decisions are explicit; interruption and retry do not silently lose or duplicate data. Preview and confirmation remain mandatory. Record test evidence before closing FT 14 hardening.
+
+H1 implementation decisions (2026-10-25, owner: Codex):
+
+- Version policy: v1 is the only supported version. Every collection must be present, every record must satisfy its domain schema, and IDs must be unique within each collection. No speculative migration or defaulting of missing domain fields. Legacy v1 photo availability/check timestamps are accepted and discarded; these cache fields are excluded from new exports. Unknown record fields are rejected on import; exports use an explicit field allowlist. Owner IDs are discarded/reassigned to the authenticated user.
+- Conflict policy: preview flags existing IDs and natural-key candidates, initially deselecting them. Each record can be selected explicitly as a separate new copy or skipped. Equal names never imply identity. Matching/merging into existing records is deliberately unavailable in this stage. Every referenced record must also be selected from the file; unresolved references block all writes before confirmation.
+- Restore IDs: SHA-256 of the authenticated owner, normalized complete backup fingerprint, collection, and original ID. Every reference is remapped. Reusing the same normalized backup and selection reuses destination IDs across retries/reloads and across ambiguous commit responses. Another account receives different IDs. A changed backup is a separate restore; keep the original file for recovery.
+- Write policy: validate the entire restore before writing. Small imports commit atomically in one Firestore transaction; larger imports use dependency-ordered transactions of at most 100 records and about 4 MB of serialized payload. Reject individual records above the conservative 900 KB limit before writing any chunk. Each transaction reads destinations before creating missing records; exact existing copies are treated as already restored, and changed destinations abort the transaction without overwriting. Earlier committed chunks remain after a later failure; there is no cross-chunk rollback. Progress counts only acknowledged chunks. Retry the same selection, including dependencies, to resume; changing already restored records can require manual conflict resolution.
+- Recovery UI: disable selection changes after a write attempt, retain the preview after failure, and report acknowledged progress. After reloading, upload the same file and explicitly select the original records (possible matches may be deselected by default). No automatic restart or background writes occur.
+- Local evidence (2026-10-25): `npm run lint`, `npm run typecheck`, `npm test` (39 tests passed), and `npm run build` passed. Tests cover all eight collections through export/preview/planning/import orchestration, malformed records/version/duplicate IDs, natural-key candidates, cross-account remapping/current ownership, selective dependencies, secret/cache exclusion, interruption/retry, and transaction payload/timestamp preservation, identical-copy retries, and changed-destination atomic aborts. Repository reads, orchestration chunk commits, and the transaction backend use test doubles; actual Firestore transaction/rules behavior and authenticated browser flows remain explicit H5/H6 gates.
+
+### H2: Google Photos Credential Handling
+
+Problem: [Photos service requests](../src/services/google/photos/index.ts) include access tokens in query strings and use a session-wide storage key. Account changes and credential lifetime need explicit handling.
+
+- [ ] H2.1 Move tokens from request URLs into authorization headers across picker session polling, media listing, and proxy routes. Ensure errors and logs never echo credentials.
+- [ ] H2.2 Scope credential state to the authenticated account. Clear tokens and account-specific media/object URLs on sign-out, account switch, disconnect, expiry, and authorization failure.
+- [ ] H2.3 Review API authentication, provider host/redirect restrictions, input validation, caching, and error mapping. Distinguish local disconnect from provider revocation and make Settings behavior accurate.
+- [ ] H2.4 Define expired media/reselection behavior and reconnect UX. Verify consent denial, popup blocking/cancellation, token expiry, two-account switching, and unavailable references.
+- [ ] H2.5 Add targeted service/route tests and verify a real Google Photos selection, save, reopen, view, download, and disconnect flow during H6.
+
+Exit gate: tokens never appear in request URLs or exported data; one Keepl account cannot reuse another account's retained Photos state; expired credentials produce a recoverable localized state. Record provider verification separately from unit tests.
+
+### H3: Localization Completion
+
+Problem: [interactions](../src/features/interactions/interaction-manager.tsx), [person profiles](../src/features/people/person-profile-client.tsx), and other screens retain English UI text despite four-language infrastructure.
+
+- [ ] H3.1 Audit all routes and feature components, including confirmations, loading/empty/error states, placeholders, aria labels, provider errors, relationship labels, and birthday/relative-date labels.
+- [ ] H3.2 Replace remaining UI strings with feature-namespaced keys in en, pt, fr, and es. Use translated schema factories and locale-aware date helpers. Preserve user-authored names, labels, notes, and descriptions.
+- [ ] H3.3 Add message-key/interpolation parity checks and focused locale persistence, fallback, formatting, and validation checks. Keep coverage aligned with the current client-side locale strategy.
+- [ ] H3.4 Verify critical flows in all four languages, including layout at mobile widths and language switching without changing stored user data.
+
+Exit gate: audited core flows have localized UI and accessible labels in all supported languages; lint, typecheck, tests, and build pass. Close the remaining FT 2 tasks only with evidence.
+
+### H4: Data Lifecycle and Failure States
+
+Problem: [person deletion](../src/features/people/person-profile-client.tsx) removes only the person; related records can remain. Several loaders convert request failures into apparently empty sections.
+
+- [ ] H4.1 Document archive versus delete behavior for notes, important dates, reminders, interactions, relationships, and shared-person memories. Preserve memories belonging to other people; define reference removal explicitly.
+- [ ] H4.2 Implement the deletion policy with owner-scoped dependency discovery, an accurate confirmation, and atomic or recoverable cleanup. Add a review path for pre-existing orphan records; never run destructive repair automatically.
+- [ ] H4.3 Replace swallowed errors with localized loading, empty, partial-failure, and retry states on profiles, Home, Upcoming, and other affected screens. Handle mutation failures and prevent accidental duplicate submissions.
+- [ ] H4.4 Test deletion with multiple-person memories, archived people, denied requests, interrupted cleanup, and retries. Verify related reminders disappear when their source is removed.
+
+Exit gate: deletion has defined and tested consequences, retries are safe, and failed reads cannot masquerade as an empty account. Align reference handling with H1.
+
+### H5: Automated Assurance and Data Access
+
+- [ ] H5.1 Add CI for lint, typecheck, tests, and production build using documented, non-secret test configuration. Keep live credentials out of logs and test fixtures.
+- [ ] H5.2 Add reproducible Firebase rules/index configuration and emulator tests for unauthenticated access, cross-owner reads/writes, owner reassignment, and intended queries. Verify deployed configuration separately in H6.
+- [ ] H5.3 Add browser coverage for sign-in/route protection and people, relationships, memories, reminders, import preview/confirmation, locale changes, and account transitions. Use isolated test data; keep external OAuth/device checks as explicit manual evidence where automation is unsuitable.
+- [ ] H5.4 Measure representative small and large datasets, then bound list reads with pagination/cursors and appropriate indexes. Preserve search completeness: define a bounded local index or server search strategy rather than searching only the first list page. Record dataset size, reads, and latency before/after.
+- [ ] H5.5 Ensure automated regression coverage exercises the H1-H4 risks, including actual repository/rules behavior rather than only pure ownership helpers.
+
+Exit gate: checks run reproducibly in CI; emulator security tests pass; common screens have documented read budgets and tested pagination/search behavior. No unmeasured scale claim is required to close a milestone.
+
+### H6: Beta and Release Verification
+
+- [ ] H6.1 Verify environment setup, Firebase authorized domains, deployed rules/indexes, Google OAuth scopes/consent, and route configuration in the intended beta environment.
+- [ ] H6.2 Run the full journey: sign in, create people/groups, connect relationships, add notes/dates/reminders, create/edit a multi-person memory with Photos, search/view graph, export, preview/restore, archive/delete, sign out, and switch accounts.
+- [ ] H6.3 Verify mobile/desktop layouts, keyboard and screen-reader basics, all four locales, Android Chrome installation/offline fallback, and iOS Safari behavior. Check offline/sign-out transitions do not expose another account's cached content; distinguish an offline fallback from supported offline editing.
+- [ ] H6.4 Record dated results, environment/device details, remaining defects, and pass/fail outcomes in this document. Resolve release blockers and define accepted limitations explicitly.
+- [ ] H6.5 Re-run lint, typecheck, tests, and production build after fixes; update setup instructions and feature statuses to match verified behavior.
+
+Exit gate: H1-H5 are closed with evidence; the beta journey passes; no unresolved data-loss, cross-account exposure, or critical-flow defects remain. This is the gate for broader release, not a claim that deployment is already verified.
+
+## Product Stages After Hardening
+
+### R1: Core UX Polish
+
+- [ ] Bring memory tag/label entry into a reusable selection/create pattern like people groups, while preserving user-owned tag values and portability. Decide whether a new collection is actually necessary before changing the data model.
+- [ ] On small screens, show Home, People, Memories, and Upcoming plus a More menu for other destinations/actions. Preserve the existing request to hide the current destination rather than highlight it; verify discoverability, keyboard/focus behavior, nested routes, and a localized accessible menu.
+- [ ] Clarify the earlier request to set a relationship with a newly created person: decide whether this means connecting existing people during creation or representing the current user in the people model, then implement the agreed flow.
+- [ ] Verify upcoming birthdays on Home, which already uses the shared upcoming-items builder; fix missing behavior only if verification finds a gap.
+
+Exit gate: agreed UX flows work at mobile and desktop sizes, in four locales, with unchanged user data and updated portability coverage where needed.
+
+### R2: Calendar and Contacts
+
+Deliver FT 7 first: service boundary, explicit permission, one chosen event, recurrence, then disconnect/revoke. Next deliver selected-contact import under FT 8 with preview, matching, and field-level choices before adding one-way refresh. Two-way sync remains a separate decision.
+
+Exit gate: permissions are progressive; duplicate calendar events and destructive contact overwrites are prevented; denied/revoked access is recoverable; owner-scoped external metadata is portable without credentials. Settings must show real capability and connection state.
+
+### R3: Smart Reminders and Notifications
+
+Deliver FT 6 suggestions and user controls before notification transport. First define recurring scheduling, timezone/DST behavior, deduplication, dismiss/snooze/complete behavior, and source deletion. Then select delivery infrastructure and implement explicit opt-in, quiet periods, revocation, retries, and delivery status.
+
+Exit gate: suggestions become reminders only by user choice; scheduling is tested across timezone and recurrence boundaries; retries do not duplicate notifications; no relationship scoring is introduced.
+
+### R4: AI Assistance and Semantic Search
+
+Deliver FT 4 draft-only entry, then FT 5 note extraction using the same review/confirmation pattern, then FT 3 opt-in semantic indexing. Before provider calls, document data sent externally, consent, retention, cost limits, and failure behavior. Keep credentials and processing/index state out of portable exports unless explicitly reviewed.
+
+Exit gate: uncertain identities require a choice; proposed changes are validated and confirmed; rejected drafts write nothing; deletion invalidates derived state; every source/result remains owner-scoped.
+
+### R5: Additional Providers and Social Integrations
+
+Use FT 10 for additional photo providers and FT 11 for permitted social enrichment. Retain the request for Microsoft and iCloud login, contacts, and photos as a provider feasibility track: document supported APIs, platform restrictions, consent/revocation, and account linking before promising a provider. Implement only feasible capabilities one provider at a time.
+
+Exit gate: the app reports actual provider capabilities, handles account linking safely, never scrapes social data, and preserves reference-only photos and selective contact import.
+
+### R6: Encryption and Sharing
+
+Deliver FT 15 only after an encryption/key-recovery design addresses search, export/restore, and lost keys. Deliver FT 13 only after a separate access-control design specifies invitation, revocation, source ownership, and interactions with encrypted fields.
+
+Exit gate: encryption recovery/failure cases and owner/invitee/revoked/anonymous access are tested; sharing cannot leak linked private people data; existing private-by-default behavior remains intact.
+
+## Roadmap Maintenance
+
+- Update this document in the same change that changes feature behavior or scope. Preserve FT numbers for stable references.
+- Check off only demonstrated work; record verification date, command/test or manual scenario, and relevant limitations. Historical checked items do not substitute for the hardening gates above.
+- When starting a stage, record its owner, status, prerequisites, and concrete implementation decisions here. Do not mark work in progress merely because it is planned.
+- Add new user-owned fields/collections to versioned export/import and ownership tests as required by [project instructions](../AGENTS.md). Never import provider permissions, credentials, or transient processing state.
+- All UI work requires en/pt/fr/es messages, locale-aware formatting, accessible states, and the four project checks. Read the installed Next.js guides before implementation.
+- Keep the README as the entry point and the original implementation plan as history; avoid separate competing priority lists.
+
+## Feature Specifications
+
+The FT sections below retain the original feature scope and task history. The status table, H/R stages, and their release gates above govern current delivery priority and completion.
 
 These features should be implemented one at a time. Each feature must preserve Keepl's core principles:
 
@@ -100,9 +275,9 @@ src/
 
 Keep shared domain types in `src/types`. Keep provider-specific API code in `src/services`. Keep UI workflows in `src/features`.
 
-## Feature Track 1: Natural-Language Search
+## Feature Track 1: Text Search
 
-Status: Complete
+Status: Implemented (local text search); scale verification in H5
 
 Goal:
 
@@ -132,7 +307,7 @@ Acceptance criteria:
 
 ## Feature Track 2: Multi-Language Support
 
-Status: Not started
+Status: Hardening required (H3)
 
 Goal:
 
@@ -140,13 +315,13 @@ Make Keepl available in English, Portuguese, French, and Spanish while keeping u
 
 Phases:
 
-- [x] Phase 1: Choose an i18n library compatible with the current Next.js App Router version.
+- [x] Phase 1: Establish the existing typed i18n context compatible with the current Next.js App Router version.
 - [x] Phase 2: Define supported locales: `en`, `pt`, `fr`, and `es`.
 - [x] Phase 3: Add translation message files and a typed translation access pattern.
 - [x] Phase 4: Add locale detection, persistence, and a language selector in Settings.
-- [x] Phase 5: Replace user-facing app shell, navigation, form, validation, empty-state, and error copy with translation keys.
-- [x] Phase 6: Localize date, time, recurrence, and relative-time formatting.
-- [x] Phase 7: Add fallback behavior for missing translations and tests for locale routing, formatting, and critical forms.
+- [ ] Phase 5: Complete translation coverage across app shell, navigation, forms, validation, empty states, and errors (remaining audit in H3).
+- [ ] Phase 6: Finish the date, time, recurrence, and relative-label audit using the existing locale-aware helpers (H3).
+- [ ] Phase 7: Verify existing fallback behavior and add locale persistence, formatting, and critical-form coverage (H3); no locale-routing migration is planned.
 
 Possible files:
 
@@ -169,7 +344,7 @@ Acceptance criteria:
 
 ## Feature Track 3: Semantic Memory Search
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -211,7 +386,7 @@ Acceptance criteria:
 
 ## Feature Track 4: AI Natural-Language Data Entry
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -251,7 +426,7 @@ Acceptance criteria:
 
 ## Feature Track 5: AI Extraction From Notes
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -292,7 +467,7 @@ Acceptance criteria:
 
 ## Feature Track 6: Smart Reminders
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -320,7 +495,7 @@ Acceptance criteria:
 
 ## Feature Track 7: Google Calendar Integration
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -359,7 +534,7 @@ Acceptance criteria:
 
 ## Feature Track 8: Full Google Contacts Synchronization
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -390,7 +565,7 @@ Acceptance criteria:
 
 ## Feature Track 9: Google Photos Picker
 
-Status: Complete
+Status: Hardening required (H2 and H6)
 
 Goal:
 
@@ -403,7 +578,7 @@ Phases:
 - [x] Phase 3: Store selected media references in `PhotoReference`.
 - [x] Phase 4: Attach photo references to memories.
 - [x] Phase 5: Handle expired or unavailable media gracefully.
-- [x] Phase 6: Add provider refresh strategy if needed.
+- [ ] Phase 6: Verify expired-reference recovery and reconnect/reselection behavior (H2/H6); do not assume provider URLs remain valid.
 
 Existing target type:
 
@@ -418,7 +593,7 @@ Acceptance criteria:
 
 ## Feature Track 10: iCloud and Other Photo Providers
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -440,7 +615,7 @@ Acceptance criteria:
 
 ## Feature Track 11: Facebook and Instagram Enhanced APIs
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -463,7 +638,7 @@ Acceptance criteria:
 
 ## Feature Track 12: Relationship Graph Visualization
 
-Status: Not started
+Status: Implemented; release verification in H6
 
 Goal:
 
@@ -491,7 +666,7 @@ Acceptance criteria:
 
 ## Feature Track 13: Multi-User and Shared Memories
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -521,7 +696,7 @@ Acceptance criteria:
 
 ## Feature Track 14: Export and Import
 
-Status: Not started
+Status: Implemented (H1); deployed transaction/rules and browser verification in H5/H6
 
 Goal:
 
@@ -531,11 +706,11 @@ Phases:
 
 - [x] Phase 1: Define versioned export schema.
 - [x] Phase 2: Add JSON export for all owned records.
-- [x] Phase 3: Add import validation with Zod.
+- [x] Phase 3: Extend the existing Zod envelope validation to collection-specific record validation (H1).
 - [x] Phase 4: Add dry-run preview before import.
 - [x] Phase 5: Add duplicate detection.
 - [x] Phase 6: Add selective import.
-- [x] Phase 7: Add tests for schema migration and malformed imports.
+- [x] Phase 7: Extend basic malformed-envelope tests to migration/version policy, invalid record fields, reference remapping, ownership, and interrupted imports (H1).
 
 Possible files:
 
@@ -552,7 +727,7 @@ Acceptance criteria:
 
 ## Feature Track 15: Encrypted Private Fields
 
-Status: Not started
+Status: Planned
 
 Goal:
 
@@ -586,25 +761,9 @@ Acceptance criteria:
 - Encrypted fields do not silently break core app behavior.
 - Search excludes encrypted content unless a local decrypted index is explicitly designed.
 
-## Recommended Implementation Order
+## Implementation Order
 
-1. Natural-language search. (FT 1) ✅
-2. Multi-language support for English, Portuguese, French, and Spanish. (FT 2) ✅
-3. Relationship graph visualization. (FT 12) ✅
-4. Export/import. (FT 14) ✅
-5. Google Photos Picker. (FT 9) ✅
-6. Google Calendar integration. (FT 7)
-7. Selected Google Contacts import, then full synchronization. (FT 8)
-8. Smart reminders. (FT 6)
-9. AI natural-language data entry. (FT 4)
-10. AI extraction from notes. (FT 5)
-11. Semantic memory search. (FT 3)
-12. Additional photo providers. (FT 10)
-13. Facebook and Instagram enhanced APIs. (FT 11)
-14. Encrypted private fields. (FT 15)
-15. Multi-user and shared memories. (FT 13)
-
-This order favors user value with low privacy risk first, then localization before more UI-heavy feature work, then integrations, then AI, then features that require deeper security architecture.
+Follow the H1-H6 and R1-R6 delivery sequence at the top of this document. Feature track numbers identify scope, not priority.
 
 ## Per-Feature Completion Checklist
 
@@ -626,8 +785,6 @@ Use this checklist before marking any deferred feature complete.
 - [ ] `npm test` passes where tests exist.
 - [ ] `npm run build` passes.
 
+## Earlier Requests
 
-## Further features
-- Improve the label structure from memories to mirror the structure used on the people group labels 
-- focused bottom navbar on sm devices. Only have home, people, memories and upcoming. all other under a ... button that when clicked will open a box with the other options. Also, hide the page where the user is instead of highlight
-- Integrate with other platforms (Microsoft and iCloud) for connect for photos and contacts and login.
+Memory labels and mobile navigation are tracked in R1. Microsoft and iCloud login, contacts, and photos are tracked in R5. No separate backlog is maintained here.

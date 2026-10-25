@@ -10,13 +10,22 @@ describe("import validation", () => {
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "test-project";
     process.env.NEXT_PUBLIC_FIREBASE_APP_ID = "1:123:web:abc";
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "123";
-    const { parseKeeplImportJson } = await import("@/services/import/import-data");
+    const { parseKeeplImportJson } =
+      await import("@/services/import/import-data");
     const data: KeeplExportData = {
       schema: "keepl.export",
       version: keeplExportSchemaVersion,
       exportedAt: "2026-08-09T00:00:00.000Z",
       collections: {
-        people: [{ id: "person-1", displayName: "Alex" }],
+        people: [
+          {
+            id: "person-1",
+            displayName: "Alex",
+            source: "manual",
+            createdAt: { __type: "timestamp", milliseconds: 0 },
+            updatedAt: { __type: "timestamp", milliseconds: 0 },
+          },
+        ],
         groups: [],
         relationships: [],
         importantDates: [],
@@ -27,7 +36,10 @@ describe("import validation", () => {
       },
     };
 
-    assert.equal(parseKeeplImportJson(JSON.stringify(data)).collections.people[0]?.id, "person-1");
+    assert.equal(
+      parseKeeplImportJson(JSON.stringify(data)).collections.people[0]?.id,
+      "person-1",
+    );
   });
 
   it("rejects malformed imports", async () => {
@@ -36,7 +48,10 @@ describe("import validation", () => {
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "test-project";
     process.env.NEXT_PUBLIC_FIREBASE_APP_ID = "1:123:web:abc";
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "123";
-    const { parseKeeplImportJson } = await import("@/services/import/import-data");
-    assert.throws(() => parseKeeplImportJson(JSON.stringify({ schema: "something-else" })));
+    const { parseKeeplImportJson } =
+      await import("@/services/import/import-data");
+    assert.throws(() =>
+      parseKeeplImportJson(JSON.stringify({ schema: "something-else" })),
+    );
   });
 });

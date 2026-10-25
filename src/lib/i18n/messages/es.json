@@ -264,7 +264,7 @@
     "importing": "Importando...",
     "importSuccess": "Registros seleccionados importados.",
     "importError": "No se pudieron importar los registros seleccionados.",
-    "importValidationError": "Este archivo no es una exportacion valida de Keepl.",
+    "importValidationError": "Exportación no válida: solo se admite la versión 1 con registros completos, válidos e ID únicos. No se ha guardado ningún registro.",
     "collectionPeople": "Personas",
     "collectionGroups": "Grupos",
     "collectionRelationships": "Relaciones",
@@ -272,6 +272,10 @@
     "collectionPersonNotes": "Notas",
     "collectionMemories": "Memorias",
     "collectionInteractions": "Interacciones",
-    "collectionReminders": "Recordatorios"
+    "collectionReminders": "Recordatorios",
+    "restorePolicy": "Los registros seleccionados se restauran como nuevas copias con nuevos ID. Los existentes nunca se sobrescriben ni se vinculan automáticamente. Selecciona también las dependencias. Se guardan grupos de hasta 100; los anteriores permanecen tras un fallo. Reintenta con el mismo archivo y selección para continuar.",
+    "candidate": "Posible coincidencia — selecciona para crear una copia independiente",
+    "dependencies": "Selecciona los registros referenciados o desmarca los dependientes antes de confirmar:",
+    "progress": "{count} de {total} registros guardados o ya restaurados."
   }
 }

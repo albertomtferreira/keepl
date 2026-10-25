@@ -264,7 +264,7 @@
     "importing": "Import...",
     "importSuccess": "Enregistrements selectionnes importes.",
     "importError": "Impossible d'importer les enregistrements selectionnes.",
-    "importValidationError": "Ce fichier n'est pas un export Keepl valide.",
+    "importValidationError": "Export invalide : seule la version 1 avec des éléments complets, valides et des identifiants uniques est acceptée. Aucun élément n’a été enregistré.",
     "collectionPeople": "Personnes",
     "collectionGroups": "Groupes",
     "collectionRelationships": "Relations",
@@ -272,6 +272,10 @@
     "collectionPersonNotes": "Notes",
     "collectionMemories": "Souvenirs",
     "collectionInteractions": "Interactions",
-    "collectionReminders": "Rappels"
+    "collectionReminders": "Rappels",
+    "restorePolicy": "Les éléments sélectionnés sont restaurés en nouvelles copies avec de nouveaux identifiants. Aucun élément existant n’est remplacé ni associé automatiquement. Sélectionnez aussi les dépendances. L’import enregistre des groupes de 100 maximum ; les précédents restent après un échec. Réessayez avec le même fichier et la même sélection pour reprendre.",
+    "candidate": "Correspondance possible — sélectionner pour créer une copie distincte",
+    "dependencies": "Sélectionnez les éléments référencés ou désélectionnez les éléments dépendants avant de confirmer :",
+    "progress": "{count} éléments sur {total} enregistrés ou déjà restaurés."
   }
 }

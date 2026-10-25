@@ -264,7 +264,7 @@
     "importing": "Importing...",
     "importSuccess": "Selected records imported.",
     "importError": "Could not import the selected records.",
-    "importValidationError": "This file is not a valid Keepl export.",
+    "importValidationError": "Invalid export: only version 1 with complete, valid records and unique IDs is supported. No records were written.",
     "collectionPeople": "People",
     "collectionGroups": "Groups",
     "collectionRelationships": "Relationships",
@@ -272,6 +272,10 @@
     "collectionPersonNotes": "Notes",
     "collectionMemories": "Memories",
     "collectionInteractions": "Interactions",
-    "collectionReminders": "Reminders"
+    "collectionReminders": "Reminders",
+    "restorePolicy": "All selected records are restored as new copies with new IDs. Existing records are never overwritten or automatically matched. Select dependencies too. Imports commit in groups of up to 100; earlier groups remain after failure. Retry with the same file and selection to resume safely.",
+    "candidate": "Possible match - select to create a separate copy",
+    "dependencies": "Select the referenced records or deselect the dependent records before confirming:",
+    "progress": "{count} of {total} records committed or already restored."
   }
 }

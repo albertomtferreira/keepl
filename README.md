@@ -18,8 +18,9 @@ Create a local environment file:
 cp .env.example .env.local
 ```
 
-Fill in the Firebase values when Firebase is configured. Phase 0 does not
-require real secrets to run the app.
+Fill in the Firebase values for your project. Authentication and data flows
+require a configured Firebase project, Google sign-in, and deployed Firestore rules
+and indexes. Do not use production user data for automated tests.
 
 Start the development server:
 
@@ -35,6 +36,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm run dev           # Start the local Next.js dev server
 npm run lint          # Run ESLint
 npm run typecheck     # Run TypeScript without emitting files
+npm test              # Run the automated test suite
 npm run build         # Create a production build
 npm run format        # Format the project
 npm run format:check  # Check formatting
@@ -45,12 +47,20 @@ npm run format:check  # Check formatting
 Only public Firebase client configuration variables are documented in
 `.env.example`. Do not commit `.env.local` or any secret values.
 
-## Project Plan
+## Project Status and Roadmap
 
-Implementation milestones are tracked in
-[`docs/implementation-plan.md`](docs/implementation-plan.md). Phase 0 sets up the
-repository and application foundation; Phase 1 will add Firebase configuration,
-Google Sign-In, route protection, the app shell, primary routes, and PWA polish.
+The core MVP is implemented, along with text search, four-language infrastructure,
+relationship graphs, export/import, and Google Photos integration. Import integrity,
+credential handling, localization coverage, data lifecycle, automated assurance,
+and beta verification are the next priorities.
+
+The [Keepl roadmap](docs/deferred-capabilities-plan.md) is the main source of truth
+for current status, staged work, dependencies, and release gates. It distinguishes
+implemented features from verified behavior and includes the remaining product
+roadmap after hardening.
+
+The [original implementation plan](docs/implementation-plan.md) is retained as
+historical MVP documentation.
 
 ## Stack
 

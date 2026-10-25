@@ -1,14 +1,27 @@
 "use client";
 
 import { CheckCircle2, Download, FileJson, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
-import { exportKeeplData, getExportCollections, serializeKeeplExport } from "@/services/export/export-data";
-import { importKeeplData, parseKeeplImportJson, previewKeeplImport } from "@/services/import/import-data";
-import type { ImportPreview, ImportSelection, KeeplExportCollection } from "@/types";
+import {
+  exportKeeplData,
+  getExportCollections,
+  serializeKeeplExport,
+} from "@/services/export/export-data";
+import {
+  getImportIssues,
+  importKeeplData,
+  parseKeeplImportJson,
+  previewKeeplImport,
+} from "@/services/import/import-data";
+import type {
+  ImportPreview,
+  ImportSelection,
+  KeeplExportCollection,
+} from "@/types";
 
 const collectionLabelKeys = {
   people: "collectionPeople",
@@ -24,20 +37,29 @@ const collectionLabelKeys = {
 export function ExportImportClient() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const busy = useRef(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [started, setStarted] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [selection, setSelection] = useState<ImportSelection>({});
-  const [status, setStatus] = useState<"idle" | "exported" | "preview" | "imported" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "exported" | "preview" | "imported" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const issues = preview ? getImportIssues(preview.exportData, selection) : [];
   const selectedCount = useMemo(() => {
     if (!preview) {
       return 0;
     }
 
     return getExportCollections().reduce((count, collection) => {
-      const selectedIds = selection[collection] ?? preview.exportData.collections[collection].map((record) => record.id);
+      const selectedIds =
+        selection[collection] ??
+        preview.exportData.collections[collection].map((record) => record.id);
       return count + selectedIds.length;
     }, 0);
   }, [preview, selection]);
@@ -53,7 +75,9 @@ export function ExportImportClient() {
 
     try {
       const data = await exportKeeplData(user.uid);
-      const blob = new Blob([serializeKeeplExport(data)], { type: "application/json" });
+      const blob = new Blob([serializeKeeplExport(data)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -70,10 +94,13 @@ export function ExportImportClient() {
   }
 
   async function handleFileChange(file: File | null) {
-    if (!file || !user) {
+    if (!file || !user || busy.current || started) {
       return;
     }
 
+    busy.current = true;
+    setPreviewing(true);
+    setProgress(0);
     setStatus("idle");
     setErrorMessage("");
     setPreview(null);
@@ -88,44 +115,63 @@ export function ExportImportClient() {
     } catch {
       setStatus("error");
       setErrorMessage(t("exportImportPage", "importValidationError"));
+    } finally {
+      busy.current = false;
+      setPreviewing(false);
     }
   }
 
   async function handleImport() {
-    if (!user || !preview) {
+    if (!user || !preview || busy.current || issues.length > 0) {
       return;
     }
 
+    busy.current = true;
     setImporting(true);
+    setStarted(true);
     setStatus("idle");
     setErrorMessage("");
 
     try {
-      await importKeeplData(user.uid, preview.exportData, selection);
+      await importKeeplData(
+        user.uid,
+        preview.exportData,
+        selection,
+        setProgress,
+      );
       setStatus("imported");
+      setStarted(false);
       setPreview(null);
       setSelection({});
     } catch {
       setStatus("error");
       setErrorMessage(t("exportImportPage", "importError"));
     } finally {
+      busy.current = false;
       setImporting(false);
     }
   }
 
-  function toggleCollection(collection: KeeplExportCollection, checked: boolean) {
+  function toggleCollection(
+    collection: KeeplExportCollection,
+    checked: boolean,
+  ) {
     if (!preview) {
       return;
     }
 
     const duplicateIds = new Set(
-      preview.duplicates.filter((duplicate) => duplicate.collection === collection).map((duplicate) => duplicate.id),
+      preview.duplicates
+        .filter((duplicate) => duplicate.collection === collection)
+        .map((duplicate) => duplicate.id),
     );
 
     setSelection((current) => ({
       ...current,
       [collection]: checked
-        ? preview.exportData.collections[collection].map((record) => record.id).filter((id) => !duplicateIds.has(id))
+        ? preview.exportData.collections[collection]
+            .map((record) => record.id)
+            .filter((id) => !duplicateIds.has(id))
         : [],
     }));
   }
@@ -134,13 +180,27 @@ export function ExportImportClient() {
     <div className="space-y-5">
       <section className="rounded-lg border bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <Download className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
+          <Download
+            className="mt-0.5 size-5 text-muted-foreground"
+            aria-hidden="true"
+          />
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold">{t("exportImportPage", "exportTitle")}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">{t("exportImportPage", "exportDescription")}</p>
-            <Button type="button" onClick={handleExport} disabled={exporting || !user} className="mt-4 gap-2">
+            <h2 className="font-semibold">
+              {t("exportImportPage", "exportTitle")}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {t("exportImportPage", "exportDescription")}
+            </p>
+            <Button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting || !user}
+              className="mt-4 gap-2"
+            >
               <FileJson className="size-4" aria-hidden="true" />
-              {exporting ? t("exportImportPage", "exporting") : t("exportImportPage", "downloadJson")}
+              {exporting
+                ? t("exportImportPage", "exporting")
+                : t("exportImportPage", "downloadJson")}
             </Button>
           </div>
         </div>
@@ -148,13 +208,28 @@ export function ExportImportClient() {
 
       <section className="rounded-lg border bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <Upload className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
+          <Upload
+            className="mt-0.5 size-5 text-muted-foreground"
+            aria-hidden="true"
+          />
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold">{t("exportImportPage", "importTitle")}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">{t("exportImportPage", "importDescription")}</p>
+            <h2 className="font-semibold">
+              {t("exportImportPage", "importTitle")}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {t("exportImportPage", "importDescription")}
+            </p>
             <label className="mt-4 inline-flex h-10 cursor-pointer items-center rounded-lg border bg-white px-4 text-sm font-medium hover:bg-muted">
               {t("exportImportPage", "chooseFile")}
-              <input type="file" accept="application/json,.json" className="sr-only" onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                disabled={importing || previewing || started}
+                accept="application/json,.json"
+                className="sr-only"
+                onChange={(event) =>
+                  handleFileChange(event.target.files?.[0] ?? null)
+                }
+              />
             </label>
           </div>
         </div>
@@ -162,48 +237,147 @@ export function ExportImportClient() {
 
       {preview ? (
         <section className="rounded-lg border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">{t("exportImportPage", "previewTitle")}</h2>
+          <h2 className="font-semibold">
+            {t("exportImportPage", "previewTitle")}
+          </h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            {t("exportImportPage", "previewDescription", { count: selectedCount })}
+            {t("exportImportPage", "previewDescription", {
+              count: selectedCount,
+            })}
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {getExportCollections().map((collection) => {
               const records = preview.exportData.collections[collection];
-              const selectedIds = selection[collection] ?? records.map((record) => record.id);
-              const duplicateCount = preview.duplicates.filter((duplicate) => duplicate.collection === collection).length;
+              const selectedIds =
+                selection[collection] ?? records.map((record) => record.id);
+              const duplicateCount = preview.duplicates.filter(
+                (duplicate) => duplicate.collection === collection,
+              ).length;
 
               return (
-                <label key={collection} className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                <label
+                  key={collection}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"
+                >
                   <span>
-                    <span className="font-medium">{t("exportImportPage", collectionLabelKeys[collection])}</span>
+                    <span className="font-medium">
+                      {t("exportImportPage", collectionLabelKeys[collection])}
+                    </span>
                     <span className="block text-muted-foreground">
-                      {t("exportImportPage", "recordCount", { count: records.length })}
-                      {duplicateCount > 0 ? ` · ${t("exportImportPage", "duplicateCount", { count: duplicateCount })}` : ""}
+                      {t("exportImportPage", "recordCount", {
+                        count: records.length,
+                      })}
+                      {duplicateCount > 0
+                        ? ` · ${t("exportImportPage", "duplicateCount", { count: duplicateCount })}`
+                        : ""}
                     </span>
                   </span>
                   <input
                     type="checkbox"
                     checked={selectedIds.length > 0}
-                    disabled={records.length === 0}
-                    onChange={(event) => toggleCollection(collection, event.target.checked)}
+                    disabled={records.length === 0 || importing || started}
+                    onChange={(event) =>
+                      toggleCollection(collection, event.target.checked)
+                    }
                   />
                 </label>
               );
             })}
           </div>
-          {preview.duplicates.length > 0 ? (
-            <p className="mt-4 text-sm leading-6 text-amber-800">{t("exportImportPage", "duplicatesHint")}</p>
+          <p className="mt-4 text-sm">
+            {t("exportImportPage", "restorePolicy")}
+          </p>
+          <div className="mt-3 space-y-2">
+            {getExportCollections().flatMap((collection) =>
+              preview.exportData.collections[collection].map((record) => (
+                <label
+                  key={`${collection}/${record.id}`}
+                  className="flex gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    disabled={importing || previewing || started}
+                    checked={
+                      selection[collection]?.includes(record.id) ?? false
+                    }
+                    onChange={(event) =>
+                      setSelection((current) => ({
+                        ...current,
+                        [collection]: event.target.checked
+                          ? [...(current[collection] ?? []), record.id]
+                          : (current[collection] ?? []).filter(
+                              (id) => id !== record.id,
+                            ),
+                      }))
+                    }
+                  />
+                  <span>
+                    {t("exportImportPage", collectionLabelKeys[collection])}:{" "}
+                    {String(
+                      record.displayName ??
+                        record.name ??
+                        record.title ??
+                        record.id,
+                    )}{" "}
+                    ({record.id})
+                    {preview.duplicates.some(
+                      (d) => d.collection === collection && d.id === record.id,
+                    )
+                      ? ` - ${t("exportImportPage", "candidate")}`
+                      : ""}
+                  </span>
+                </label>
+              )),
+            )}
+          </div>
+          {issues.length > 0 ? (
+            <div role="alert" className="mt-4 text-sm text-amber-800">
+              <p>{t("exportImportPage", "dependencies")}</p>
+              <ul>
+                {issues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            </div>
           ) : null}
-          <Button type="button" onClick={handleImport} disabled={importing || selectedCount === 0} className="mt-4 gap-2">
+          <p role="status" className="mt-3 text-sm">
+            {t("exportImportPage", "progress", {
+              count: progress,
+              total: selectedCount,
+            })}
+          </p>
+          <Button
+            type="button"
+            onClick={handleImport}
+            disabled={
+              importing ||
+              selectedCount === 0 ||
+              issues.length > 0 ||
+              status === "imported"
+            }
+            className="mt-4 gap-2"
+          >
             <CheckCircle2 className="size-4" aria-hidden="true" />
-            {importing ? t("exportImportPage", "importing") : t("exportImportPage", "confirmImport")}
+            {importing
+              ? t("exportImportPage", "importing")
+              : t("exportImportPage", "confirmImport")}
           </Button>
         </section>
       ) : null}
 
-      {status === "exported" ? <p className="text-sm text-emerald-700">{t("exportImportPage", "exportSuccess")}</p> : null}
-      {status === "imported" ? <p className="text-sm text-emerald-700">{t("exportImportPage", "importSuccess")}</p> : null}
-      {status === "error" ? <p className="text-sm text-amber-700">{errorMessage}</p> : null}
+      {status === "exported" ? (
+        <p className="text-sm text-emerald-700">
+          {t("exportImportPage", "exportSuccess")}
+        </p>
+      ) : null}
+      {status === "imported" ? (
+        <p className="text-sm text-emerald-700">
+          {t("exportImportPage", "importSuccess")}
+        </p>
+      ) : null}
+      {status === "error" ? (
+        <p className="text-sm text-amber-700">{errorMessage}</p>
+      ) : null}
     </div>
   );
 }
@@ -212,12 +386,16 @@ function buildDefaultSelection(preview: ImportPreview): ImportSelection {
   return Object.fromEntries(
     getExportCollections().map((collection) => {
       const duplicateIds = new Set(
-        preview.duplicates.filter((duplicate) => duplicate.collection === collection).map((duplicate) => duplicate.id),
+        preview.duplicates
+          .filter((duplicate) => duplicate.collection === collection)
+          .map((duplicate) => duplicate.id),
       );
 
       return [
         collection,
-        preview.exportData.collections[collection].map((record) => record.id).filter((id) => !duplicateIds.has(id)),
+        preview.exportData.collections[collection]
+          .map((record) => record.id)
+          .filter((id) => !duplicateIds.has(id)),
       ];
     }),
   );

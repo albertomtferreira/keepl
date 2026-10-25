@@ -2,12 +2,9 @@
 
 This document tracks the implementation of the private, person-centred relationship and memory manager described in `docs/prompt.md`.
 
-Current repository state:
+## Historical Scope
 
-- Only documentation exists at the time this plan was created.
-- There is no initialized Next.js application yet.
-- There is no Git repository metadata in the workspace yet.
-- `docs/1. Technical stack.md` was referenced by the IDE but was not present on disk.
+This document records the original MVP milestones, which are implemented. Its phase completion statements describe that milestone, not current release assurance. For current status, hardening stages, acceptance gates, and future priorities, use the [Keepl roadmap](./deferred-capabilities-plan.md), the main source of truth.
 
 ## Product Direction
 
@@ -416,34 +413,10 @@ Acceptance criteria:
 - Core business logic has focused tests.
 - Production build succeeds.
 
-## Deferred Capabilities
+## Work After the MVP
 
-Do not implement these during the MVP unless explicitly reprioritized:
+The [Keepl roadmap](./deferred-capabilities-plan.md) supersedes the original deferred-feature list and next-step instructions.
 
-- AI natural-language data entry.
-- AI extraction from notes.
-- Natural-language search.
-- Semantic memory search.
-- Relationship graph visualization.
-- Smart reminders.
-- Google Calendar integration.
-- Full Google Contacts synchronization.
-- Facebook or Instagram enhanced APIs.
-- iCloud or other photo providers.
-- Multi-user or shared memories.
-- Export/import.
-- Encrypted private fields.
+Search, localization infrastructure, relationship graphs, export/import, and Google Photos have since been implemented. The roadmap distinguishes these implementations from their remaining hardening and release-verification work.
 
-## Immediate Next Step
-
-Start with Phase 5:
-
-1. Implement relationship creation between existing people.
-2. Add inverse relationship helpers and current-person perspective labels.
-3. Validate with lint, TypeScript checks, targeted tests, and production build.
-
-
-## Improvements
-- The user should be able to set a relationship with the created person
-- Upcoming birthdays on home
-- Settings - Contacts/Photos/Calendar/Notifications - Implement
+Start with roadmap stages H1 (import integrity) and H2 (Photos credentials), then complete H3-H6 before product expansion. The earlier requests for a relationship during person creation, upcoming birthdays on Home, and integration settings are retained in roadmap stages R1-R3.

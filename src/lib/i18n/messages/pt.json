@@ -264,7 +264,7 @@
     "importing": "A importar...",
     "importSuccess": "Registos selecionados importados.",
     "importError": "Nao foi possivel importar os registos selecionados.",
-    "importValidationError": "Este ficheiro nao e uma exportacao Keepl valida.",
+    "importValidationError": "Exportação inválida: apenas a versão 1 com registos completos, válidos e IDs únicos é aceite. Nenhum registo foi gravado.",
     "collectionPeople": "Pessoas",
     "collectionGroups": "Grupos",
     "collectionRelationships": "Relacoes",
@@ -272,6 +272,10 @@
     "collectionPersonNotes": "Notas",
     "collectionMemories": "Memorias",
     "collectionInteractions": "Interacoes",
-    "collectionReminders": "Lembretes"
+    "collectionReminders": "Lembretes",
+    "restorePolicy": "Os registos selecionados são restaurados como novas cópias com novos IDs. Os existentes nunca são substituídos nem associados automaticamente. Selecione também as dependências. A importação grava grupos de até 100; os anteriores permanecem após uma falha. Repita com o mesmo ficheiro e seleção para retomar.",
+    "candidate": "Possível correspondência — selecione para criar uma cópia separada",
+    "dependencies": "Selecione os registos referenciados ou desmarque os dependentes antes de confirmar:",
+    "progress": "{count} de {total} registos gravados ou já restaurados."
   }
 }
