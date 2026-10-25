@@ -1,7 +1,6 @@
 import {
-  addDoc,
+  runTransaction,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -9,8 +8,6 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
-  updateDoc,
   where,
   type Firestore,
   type OrderByDirection,
@@ -19,7 +16,11 @@ import {
 } from "firebase/firestore";
 
 import { db as defaultDb } from "@/lib/firebase/client";
-import { createFirestoreConverter, type FirestoreEntityData } from "@/repositories/firestore-converter";
+import {
+  createFirestoreConverter,
+  type FirestoreEntityData,
+} from "@/repositories/firestore-converter";
+import { canonical, checkReferences } from "@/services/lifecycle/plan";
 import { isOwnedBy } from "@/repositories/ownership";
 import type { Entity, OwnedRecord, UserOwnedEntity } from "@/types";
 
@@ -66,7 +67,9 @@ export class OwnedFirestoreRepository<T extends UserOwnedEntity> {
     const constraints: QueryConstraint[] = [where("ownerId", "==", ownerId)];
 
     if (options.orderBy) {
-      constraints.push(orderBy(options.orderBy.field, options.orderBy.direction));
+      constraints.push(
+        orderBy(options.orderBy.field, options.orderBy.direction),
+      );
     }
 
     if (options.constraints) {
@@ -81,57 +84,124 @@ export class OwnedFirestoreRepository<T extends UserOwnedEntity> {
     return snapshot.docs.map((document) => document.data());
   }
 
-  async create(ownerId: string, data: CreateInput<T>) {
-    const document = await addDoc(this.collectionRef(), {
-      ...data,
-      ownerId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    } as WithFieldValue<FirestoreEntityData<T>>);
-
-    return document.id;
+  async create(ownerId: string, data: CreateInput<T>, requestId?: string) {
+    const ref = requestId ? this.docRef(requestId) : doc(this.collectionRef());
+    await this.write(ownerId, ref.id, data, false, true);
+    return ref.id;
   }
 
   async set(ownerId: string, id: string, data: CreateInput<T>) {
-    await setDoc(this.docRef(id), {
-      ...data,
-      ownerId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    } as WithFieldValue<FirestoreEntityData<T>>);
-
+    await this.write(ownerId, id, data, false);
     return id;
   }
 
   async update(ownerId: string, id: string, data: UpdateInput<T>) {
-    const existing = await this.getById(ownerId, id);
+    await this.write(ownerId, id, data, true);
+  }
 
-    if (!existing) {
-      throw new Error(`Cannot update ${this.collectionName}/${id}: document not found for owner.`);
-    }
-
-    await updateDoc(this.docRef(id), {
-      ...data,
-      ownerId,
-      updatedAt: serverTimestamp(),
+  private async write(
+    ownerId: string,
+    id: string,
+    data: UpdateInput<T>,
+    merge: boolean,
+    createOnly = false,
+  ) {
+    if (!ownerId || "deletionPending" in data)
+      throw new Error("invalid-owner-or-lifecycle-field");
+    await runTransaction(this.firestore, async (transaction) => {
+      const ref = this.docRef(id);
+      const snapshot = await transaction.get(ref);
+      const existing = snapshot.exists() ? snapshot.data() : null;
+      if (
+        existing &&
+        (!isOwnedBy(existing, ownerId) || existing.deletionPending)
+      )
+        throw new Error("record-unavailable");
+      if (merge && !existing) throw new Error("record-unavailable");
+      const record = { ...(merge ? existing : {}), ...data };
+      await checkReferences(
+        ownerId,
+        this.collectionName,
+        record,
+        async (collectionName, referenceId) => {
+          const parent = await transaction.get(
+            doc(this.firestore, collectionName, referenceId),
+          );
+          return parent.exists()
+            ? {
+                ...parent.data(),
+                id: parent.id,
+                ownerId: parent.data().ownerId,
+              }
+            : null;
+        },
+      );
+      if (createOnly && existing) {
+        const fields = Object.fromEntries(
+          Object.entries(existing).filter(
+            ([key]) =>
+              ![
+                "id",
+                "ownerId",
+                "createdAt",
+                "updatedAt",
+                "deletionPending",
+              ].includes(key),
+          ),
+        );
+        if (canonical(fields) !== canonical(data))
+          throw new Error("create-conflict");
+        return;
+      }
+      if (merge)
+        transaction.update(ref, {
+          ...data,
+          ownerId,
+          updatedAt: serverTimestamp(),
+        });
+      else
+        transaction.set(ref, {
+          ...data,
+          ownerId,
+          createdAt: existing?.createdAt ?? serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        } as WithFieldValue<FirestoreEntityData<T>>);
     });
   }
 
   async delete(ownerId: string, id: string) {
-    const existing = await this.getById(ownerId, id);
-
-    if (!existing) {
-      throw new Error(`Cannot delete ${this.collectionName}/${id}: document not found for owner.`);
+    if (
+      ["people", "importantDates", "memories"].includes(this.collectionName)
+    ) {
+      const { previewLifecycle, confirmLifecycle } =
+        await import("@/services/lifecycle");
+      await confirmLifecycle(
+        await previewLifecycle(ownerId, {
+          collection: this.collectionName as
+            "people" | "importantDates" | "memories",
+          id,
+        }),
+      );
+      return;
     }
-
-    await deleteDoc(this.docRef(id));
+    await runTransaction(this.firestore, async (transaction) => {
+      const ref = this.docRef(id);
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists()) return;
+      if (!isOwnedBy(snapshot.data(), ownerId)) throw new Error("ownership");
+      transaction.delete(ref);
+    });
   }
 
   protected collectionRef() {
-    return collection(this.firestore, this.collectionName).withConverter(this.converter);
+    return collection(this.firestore, this.collectionName).withConverter(
+      this.converter,
+    );
   }
 
   protected docRef(id: string) {
-    return doc(this.firestore, this.collectionName, id).withConverter(this.converter);
+    return doc(this.firestore, this.collectionName, id).withConverter(
+      this.converter,
+    );
   }
 }

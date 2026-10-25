@@ -53,7 +53,7 @@ export class UserProfilesRepository {
     const existing = await this.get(userId);
 
     if (!existing) {
-      return;
+      throw new Error("profile-unavailable");
     }
 
     await updateDoc(this.ref(userId), {
@@ -64,7 +64,9 @@ export class UserProfilesRepository {
   }
 
   private ref(userId: string) {
-    return doc(this.firestore, "users", userId).withConverter(userProfileConverter);
+    return doc(this.firestore, "users", userId).withConverter(
+      userProfileConverter,
+    );
   }
 }
 

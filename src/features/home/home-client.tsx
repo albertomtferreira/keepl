@@ -13,6 +13,8 @@ import { useEffect, useMemo, useState } from "react";
 import { buildUpcomingItems } from "@/features/important-dates/upcoming-items";
 import { formatLastInteraction } from "@/features/interactions/interaction-format";
 import { MemoryCard } from "@/features/memories/memory-card";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { formatRelativeDateLabel } from "@/lib/dates/flexible-date";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -31,6 +33,9 @@ import type {
 
 export function HomeClient() {
   const { user } = useAuth();
+  const [attempt, setAttempt] = useState(0);
+  const [loadFailure, setLoadFailure] = useState<boolean | null>(null);
+  const [loadedKey, setLoadedKey] = useState("");
   const { locale, t } = useI18n();
   const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
@@ -38,6 +43,7 @@ export function HomeClient() {
   const [notes, setNotes] = useState<PersonNote[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [olderThanRecentCutoff, setOlderThanRecentCutoff] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [today] = useState(() => new Date());
 
   useEffect(() => {
@@ -45,31 +51,49 @@ export function HomeClient() {
       return;
     }
     const ownerId = user.uid;
+    const requestKey = user?.uid;
+    let cancelled = false;
 
     async function loadHome() {
-      const [
-        datesResult,
-        interactionsResult,
-        memoriesResult,
-        notesResult,
-        peopleResult,
-      ] = await Promise.all([
-        importantDatesRepository.listForOwner(ownerId).catch(() => []),
-        interactionsRepository.listRecent(ownerId, 20).catch(() => []),
-        memoriesRepository.listRecent(ownerId, 3).catch(() => []),
-        personNotesRepository.list(ownerId).catch(() => []),
-        peopleRepository.listActive(ownerId).catch(() => []),
-      ]);
-      setImportantDates(datesResult);
-      setInteractions(interactionsResult);
-      setMemories(memoriesResult);
-      setNotes(notesResult);
-      setPeople(peopleResult);
-      setOlderThanRecentCutoff(Date.now() - 1000 * 60 * 60 * 24 * 30);
+      setLoading(true);
+      setLoadFailure(null);
+      try {
+        const [
+          datesResult,
+          interactionsResult,
+          memoriesResult,
+          notesResult,
+          peopleResult,
+        ] = await settleReads([
+          importantDatesRepository.listForOwner(ownerId),
+          interactionsRepository.listRecent(ownerId, 20),
+          memoriesRepository.listRecent(ownerId, 3),
+          personNotesRepository.list(ownerId),
+          peopleRepository.listActive(ownerId),
+        ]);
+        if (cancelled) return;
+        setImportantDates(datesResult);
+        setInteractions(interactionsResult);
+        setMemories(memoriesResult);
+        setNotes(notesResult);
+        setPeople(peopleResult);
+        setOlderThanRecentCutoff(Date.now() - 1000 * 60 * 60 * 24 * 30);
+      } catch (error) {
+        if (!cancelled)
+          setLoadFailure(error instanceof ReadFailure && error.partial);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedKey(requestKey ?? "");
+        }
+      }
     }
 
     void loadHome();
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, attempt]);
 
   const peopleById = useMemo(
     () => new Map(people.map((person) => [person.id, person])),
@@ -106,6 +130,14 @@ export function HomeClient() {
         : t("home", "notesSaved", { count: notes.length })
       : t("home", "pinnedNotesGentle");
 
+  if (loading || loadedKey !== (user?.uid ?? "")) return <LoadState loading />;
+  if (loadFailure !== null)
+    return (
+      <LoadState
+        partial={loadFailure}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-3">

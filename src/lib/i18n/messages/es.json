@@ -424,5 +424,29 @@
     "colleague": "colega",
     "mentee": "aprendiz",
     "mentor": "mentor"
+  },
+  "lifecycle": {
+    "deleteTitle": "Eliminar persona y revisar dependencias",
+    "repairTitle": "Revisar registros huérfanos",
+    "deletePolicy": "Elimina esta persona, sus notas, fechas, interacciones, relaciones y recordatorios asociados. Conserva todos los recuerdos; solo retira las referencias a esta persona. Es irreversible. Las nuevas referencias se bloquean durante la limpieza. Si falla, revisa de nuevo para continuar; los cambios anteriores se mantienen.",
+    "repairPolicy": "Busca registros que referencian personas, grupos, fechas o recuerdos que ya no existen. Revisa cada retirada antes de confirmar. Los recuerdos se conservan. Nada se repara automáticamente.",
+    "counts": "Registros para eliminar: {count}. Registros de los que se retirarán referencias: {memories}.",
+    "review": "Revisar cambios",
+    "confirm": "Confirmar cambios revisados",
+    "remove": "Eliminar registro",
+    "detach": "Retirar referencias ausentes",
+    "noOrphans": "No se encontraron registros huérfanos.",
+    "progress": "Procesando… {count} registros dependientes confirmados.",
+    "error": "La limpieza falló o los datos revisados cambiaron. Pueden mantenerse cambios anteriores. Revisa de nuevo antes de reintentar. Una eliminación pendiente bloquea ediciones y nuevas referencias hasta terminar.",
+    "done": "Cambios revisados completados.",
+    "loading": "Cargando registros…",
+    "loadError": "No se pudieron cargar los registros. Inténtalo de nuevo.",
+    "partialError": "No se pudieron cargar algunos registros. Los resultados incompletos están ocultos; inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "mutationError": "No se pudieron guardar los cambios. Inténtalo de nuevo; si hay una eliminación pendiente, termínala primero.",
+    "pending": "Eliminación pendiente. Revisa la limpieza para continuar. Los registros ya eliminados no se eliminarán dos veces.",
+    "archivePolicy": "Archivar oculta esta persona de las listas activas pero conserva su perfil, notas, fechas, recordatorios, relaciones y recuerdos. El perfil sigue accesible mediante su enlace.",
+    "dateDelete": "¿Eliminar {name} y sus recordatorios? Es irreversible.",
+    "memoryDelete": "¿Eliminar {name} y sus recordatorios? Se conservan las personas y sus otros recuerdos."
   }
 }

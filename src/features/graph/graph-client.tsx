@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { RelationshipGraphView } from "@/features/graph/relationship-graph-view";
 import { deriveRelationshipGraph } from "@/lib/graph/relationship-graph";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
@@ -13,11 +15,16 @@ import type { Group, Person, Relationship } from "@/types";
 
 export function GraphClient() {
   const { user } = useAuth();
+  const [attempt, setAttempt] = useState(0);
+  const [partial, setPartial] = useState(false);
+  const [loadedOwner, setLoadedOwner] = useState("");
   const { t } = useI18n();
   const [people, setPeople] = useState<Person[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [selectedRelationshipTypes, setSelectedRelationshipTypes] = useState<string[]>([]);
+  const [selectedRelationshipTypes, setSelectedRelationshipTypes] = useState<
+    string[]
+  >([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -27,30 +34,41 @@ export function GraphClient() {
       return;
     }
     const ownerId = user.uid;
+    let cancelled = false;
 
     async function loadGraph() {
       setLoading(true);
       setLoadError(false);
 
       try {
-        const [peopleResult, relationshipsResult, groupsResult] = await Promise.all([
-          peopleRepository.listActive(ownerId),
-          relationshipsRepository.list(ownerId),
-          groupsRepository.listByName(ownerId),
-        ]);
+        const [peopleResult, relationshipsResult, groupsResult] =
+          await settleReads([
+            peopleRepository.listActive(ownerId),
+            relationshipsRepository.list(ownerId),
+            groupsRepository.listByName(ownerId),
+          ]);
 
+        if (cancelled) return;
         setPeople(peopleResult);
         setRelationships(relationshipsResult);
         setGroups(groupsResult);
-      } catch {
+      } catch (caught) {
+        if (cancelled) return;
+        setPartial(caught instanceof ReadFailure && caught.partial);
         setLoadError(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedOwner(ownerId);
+        }
       }
     }
 
     void loadGraph();
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, attempt]);
 
   const graph = useMemo(
     () =>
@@ -63,12 +81,28 @@ export function GraphClient() {
     [people, relationships, selectedGroupIds, selectedRelationshipTypes],
   );
 
+  if (loading || loadedOwner !== user?.uid) return <LoadState loading />;
+  if (loadError)
+    return (
+      <LoadState
+        partial={partial}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
   if (loading) {
-    return <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("graphPage", "loading")}</div>;
+    return (
+      <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+        {t("graphPage", "loading")}
+      </div>
+    );
   }
 
   if (loadError) {
-    return <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("graphPage", "loadError")}</div>;
+    return (
+      <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+        {t("graphPage", "loadError")}
+      </div>
+    );
   }
 
   return (

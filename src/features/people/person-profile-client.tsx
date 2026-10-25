@@ -27,6 +27,10 @@ import { formatLastInteraction } from "@/features/interactions/interaction-forma
 import { ImportantDateManager } from "@/features/important-dates/important-date-manager";
 import { PersonNotesManager } from "@/features/notes/person-notes-manager";
 import { RelationshipManager } from "@/features/relationships/relationship-manager";
+import { LifecycleReview } from "@/features/lifecycle/lifecycle-review";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { deriveRelationshipGraph } from "@/lib/graph/relationship-graph";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -54,7 +58,12 @@ import {
 
 export function PersonProfileClient({ personId }: { personId: string }) {
   const router = useRouter();
+  const [showDelete, setShowDelete] = useState(false);
   const { user } = useAuth();
+  const mutation = useMutation();
+  const [attempt, setAttempt] = useState(0);
+  const [loadFailure, setLoadFailure] = useState<boolean | null>(null);
+  const [loadedKey, setLoadedKey] = useState("");
   const { locale, t } = useI18n();
   const [person, setPerson] = useState<Person | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
@@ -71,75 +80,85 @@ export function PersonProfileClient({ personId }: { personId: string }) {
       return;
     }
     const ownerId = user.uid;
+    const requestKey = `${user?.uid}/${personId}`;
+    let cancelled = false;
 
     async function loadProfile() {
       setLoading(true);
-      const [
-        personResult,
-        peopleResult,
-        groupsResult,
-        datesResult,
-        notesResult,
-        relationshipsResult,
-        memoriesResult,
-        interactionsResult,
-      ] = await Promise.all([
-        peopleRepository.getById(ownerId, personId),
-        peopleRepository.listActive(ownerId),
-        groupsRepository.listByName(ownerId),
-        importantDatesRepository
-          .listForPerson(ownerId, personId)
-          .catch(() => []),
-        personNotesRepository.listForPerson(ownerId, personId).catch(() => []),
-        relationshipsRepository
-          .listForPerson(ownerId, personId)
-          .catch(() => []),
-        memoriesRepository.listForPerson(ownerId, personId).catch(() => []),
-        interactionsRepository.listForPerson(ownerId, personId).catch(() => []),
-      ]);
+      setLoadFailure(null);
+      try {
+        const [
+          personResult,
+          peopleResult,
+          groupsResult,
+          datesResult,
+          notesResult,
+          relationshipsResult,
+          memoriesResult,
+          interactionsResult,
+        ] = await settleReads([
+          peopleRepository.getById(ownerId, personId),
+          peopleRepository.listActive(ownerId),
+          groupsRepository.listByName(ownerId),
+          importantDatesRepository.listForPerson(ownerId, personId),
+          personNotesRepository.listForPerson(ownerId, personId),
+          relationshipsRepository.listForPerson(ownerId, personId),
+          memoriesRepository.listForPerson(ownerId, personId),
+          interactionsRepository.listForPerson(ownerId, personId),
+        ]);
 
-      setPerson(personResult);
-      setPeople(peopleResult);
-      setGroups(groupsResult);
-      setImportantDates(datesResult);
-      setNotes(notesResult);
-      setRelationships(relationshipsResult);
-      setMemories(memoriesResult);
-      setInteractions(interactionsResult);
-      setLoading(false);
+        if (cancelled) return;
+        setPerson(personResult);
+        setPeople(peopleResult);
+        setGroups(groupsResult);
+        setImportantDates(datesResult);
+        setNotes(notesResult);
+        setRelationships(relationshipsResult);
+        setMemories(memoriesResult);
+        setInteractions(interactionsResult);
+      } catch (error) {
+        if (!cancelled)
+          setLoadFailure(error instanceof ReadFailure && error.partial);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedKey(requestKey ?? "");
+        }
+      }
     }
 
     void loadProfile();
-  }, [personId, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [personId, user, attempt]);
 
   async function archivePerson() {
-    if (
-      !user ||
-      !person ||
-      !confirm(t("peoplePage", "archiveConfirm", { name: person.displayName }))
-    ) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (
+        !user ||
+        !person ||
+        !confirm(
+          t("peoplePage", "archiveConfirm", { name: person.displayName }),
+        )
+      ) {
+        return;
+      }
 
-    await peopleRepository.archive(user.uid, person.id);
-    router.push("/people");
+      await peopleRepository.archive(user.uid, person.id);
+      router.push("/people");
+    });
   }
 
-  async function deletePerson() {
-    if (
-      !user ||
-      !person ||
-      !confirm(
-        t("personProfile", "deleteConfirm", { name: person.displayName }),
-      )
-    ) {
-      return;
-    }
-
-    await peopleRepository.delete(user.uid, person.id);
-    router.push("/people");
-  }
-
+  if (loading || loadedKey !== `${user?.uid}/${personId}`)
+    return <LoadState loading />;
+  if (loadFailure !== null)
+    return (
+      <LoadState
+        partial={loadFailure}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
   if (loading) {
     return (
       <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
@@ -166,7 +185,7 @@ export function PersonProfileClient({ personId }: { personId: string }) {
   });
 
   return (
-    <div className="space-y-5">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-5">
       <Button asChild variant="ghost" size="sm">
         <Link href="/people">
           <ArrowLeft className="size-4" aria-hidden="true" />
@@ -207,7 +226,11 @@ export function PersonProfileClient({ personId }: { personId: string }) {
               <Archive className="size-4" aria-hidden="true" />
               {t("peoplePage", "archive")}
             </Button>
-            <Button type="button" variant="destructive" onClick={deletePerson}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setShowDelete((value) => !value)}
+            >
               <Trash2 className="size-4" aria-hidden="true" />
               {t("common", "delete")}
             </Button>
@@ -215,6 +238,19 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         </div>
       </section>
 
+      <p className="text-sm text-muted-foreground">
+        {t("lifecycle", "archivePolicy")}
+      </p>
+      {person.deletionPending ? (
+        <p role="alert">{t("lifecycle", "pending")}</p>
+      ) : null}
+      {showDelete || person.deletionPending ? (
+        <LifecycleReview
+          key={person.id}
+          target={{ collection: "people", id: person.id }}
+          onComplete={() => router.push("/people")}
+        />
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-2">
         <ProfileSection
           icon={UsersRound}
@@ -317,7 +353,8 @@ export function PersonProfileClient({ personId }: { personId: string }) {
           ))}
         </ProfileSection>
       </div>
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }
 

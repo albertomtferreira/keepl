@@ -2,7 +2,7 @@
 
 This is the main source of truth for current status, priorities, release gates, and future work. The filename is retained so existing links keep working. The [original implementation plan](./implementation-plan.md) records the historical MVP milestones; it does not define the next work.
 
-Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3 implementation decisions and local verification evidence are recorded in their stage sections.
+Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3/H4 implementation decisions and local verification evidence are recorded in their stage sections.
 
 ## Status and Evidence
 
@@ -36,7 +36,7 @@ Complete H1-H6 before starting new provider or AI delivery work. H1 and H2 are t
 | H1    | Import validation, references, recovery                    | Implemented | Local checks below; deployed checks in H5/H6                       |
 | H2    | Google Photos credentials and account isolation            | Implemented | Before new provider integrations     |
 | H3    | Complete localization                                      | Verified locally (2026-10-25) | Before broader beta                  |
-| H4    | Data lifecycle and honest failure states                   | Planned | Coordinate reference policy with H1  |
+| H4    | Data lifecycle and honest failure states                   | Implemented; local checks passed | Coordinate reference policy with H1  |
 | H5    | Automated checks, rules/index configuration, bounded reads | Planned | Cover H1-H4 fixes                    |
 | H6    | End-to-end beta and release verification                   | Planned | H1-H5                                |
 | R1    | Navigation, memory labels, remaining core UX               | Planned | H6                                   |
@@ -120,12 +120,20 @@ H3 implementation decisions and evidence (2026-10-25, owner: Codex):
 
 Problem: [person deletion](../src/features/people/person-profile-client.tsx) removes only the person; related records can remain. Several loaders convert request failures into apparently empty sections.
 
-- [ ] H4.1 Document archive versus delete behavior for notes, important dates, reminders, interactions, relationships, and shared-person memories. Preserve memories belonging to other people; define reference removal explicitly.
-- [ ] H4.2 Implement the deletion policy with owner-scoped dependency discovery, an accurate confirmation, and atomic or recoverable cleanup. Add a review path for pre-existing orphan records; never run destructive repair automatically.
-- [ ] H4.3 Replace swallowed errors with localized loading, empty, partial-failure, and retry states on profiles, Home, Upcoming, and other affected screens. Handle mutation failures and prevent accidental duplicate submissions.
-- [ ] H4.4 Test deletion with multiple-person memories, archived people, denied requests, interrupted cleanup, and retries. Verify related reminders disappear when their source is removed.
+- [x] H4.1 Document archive versus delete behavior for notes, important dates, reminders, interactions, relationships, and shared-person memories. Preserve memories belonging to other people; define reference removal explicitly.
+- [x] H4.2 Implement the deletion policy with owner-scoped dependency discovery, an accurate confirmation, and atomic or recoverable cleanup. Add a review path for pre-existing orphan records; never run destructive repair automatically.
+- [x] H4.3 Replace swallowed errors with localized loading, empty, partial-failure, and retry states on profiles, Home, Upcoming, and other affected screens. Handle mutation failures and prevent accidental duplicate submissions.
+- [x] H4.4 Test deletion with multiple-person memories, archived people, denied requests, interrupted cleanup, and retries. Verify related reminders disappear when their source is removed.
 
 Exit gate: deletion has defined and tested consequences, retries are safe, and failed reads cannot masquerade as an empty account. Align reference handling with H1.
+
+H4 implementation decisions and local evidence (2026-10-25, owner: Codex):
+
+- Policy: [data lifecycle and recovery](./data-lifecycle.md) defines archive, person/date/memory deletion, orphan review, and retry behavior. Archive retains data and reminder scheduling. Person deletion removes owned notes/dates/interactions/relationships and directly/date-linked reminders, preserves all memories, and detaches only the deleted person's ID. Date/memory deletion removes related reminders. Person deletion is preview-first; legacy orphan repair is a separate explicit Settings review and confirmation.
+- Recovery/concurrency: the source is marked `deletionPending` after confirmation and deleted last. Current repository and import transactions reject new references to missing, foreign, or pending sources, including transitive reminder dependencies. Initial discovery failures write nothing; later failures retain the pending source for recovery. Cleanup rechecks reviewed content, uses chunks of at most 50 records/about 4 MB, and reports acknowledged progress. Earlier chunks remain after failure; review again to resume. No automatic rollback, unlock, or orphan repair. The marker is excluded from H1 exports and rejected on import; portable schema/version and domain fields are unchanged. Client guards do not replace the H5 rules gate or protect against old clients/direct external writes.
+- Failure UI: localized loading/full-failure/partial-failure/retry states on Home, Upcoming, profiles, lists, Search, Graph, edit screens, and form choices. Incomplete results are hidden rather than rendered as empty. Loads ignore stale responses. Mutation controls have synchronous submission locks; draft creates retain stable request IDs and reject changed destinations rather than overwriting. Date/reminder partial saves can be retried with the same draft. Date reminder loading failures block accidental overwrites of an unknown reminder preset. Background profile updates no longer overwrite a new locale selection or silently report persistence when the profile is missing.
+- Automated evidence: `npm run lint`, `npm run typecheck`, `npm test` (75 tests passed), and `npm run build` passed. Lifecycle and transaction-port tests cover archived sources, shared/sole-participant memory preservation, source-only reminder references, ownership, missing/pending/transitive references, denied reads, fresh-review retries after interruption/ambiguous commits, changed previews, restored dependencies, and full/partial read failures. H1 coverage also verifies marker exclusion/rejection and guarded imports. The transaction backend is exercised with atomic in-memory doubles; real Firestore/rules behavior remains H5/H6.
+- Browser evidence: signed-in local person-deletion preview and Settings orphan review passed in en/pt/fr/es at 375 x 812 without horizontal overflow. The existing profile preview correctly proposed eight deletions and one preserved-memory reference update. Every preview was canceled; no personal records were deleted. Destructive real-backend flows, forced mutation/read denial UI, cross-account transitions, and deployed concurrency/rules remain H5/H6 gates. These local checks establish implementation evidence, not beta release verification.
 
 ### H5: Automated Assurance and Data Access
 

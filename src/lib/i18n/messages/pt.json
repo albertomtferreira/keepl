@@ -424,5 +424,29 @@
     "colleague": "colega",
     "mentee": "mentorado/mentorada",
     "mentor": "mentor/mentora"
+  },
+  "lifecycle": {
+    "deleteTitle": "Eliminar pessoa e rever dependências",
+    "repairTitle": "Rever registos órfãos",
+    "deletePolicy": "Elimina esta pessoa, notas, datas, interações, relações e lembretes associados. Mantém todas as memórias, removendo apenas as referências à pessoa. É irreversível. Durante a limpeza, novas referências são bloqueadas. Se falhar, reveja para continuar; as alterações anteriores mantêm-se.",
+    "repairPolicy": "Procura registos com referências a pessoas, grupos, datas ou memórias que já não existem. Reveja todas as remoções antes de confirmar. As memórias são preservadas. Nada é reparado automaticamente.",
+    "counts": "Registos a eliminar: {count}. Registos cujas referências serão removidas: {memories}.",
+    "review": "Rever alterações",
+    "confirm": "Confirmar alterações revistas",
+    "remove": "Eliminar registo",
+    "detach": "Remover referências ausentes",
+    "noOrphans": "Não foram encontrados registos órfãos.",
+    "progress": "A processar… {count} registos dependentes confirmados.",
+    "error": "A limpeza falhou ou os dados revistos mudaram. Podem manter-se alterações anteriores. Reveja antes de tentar novamente. Uma eliminação pendente bloqueia edições e novas referências até terminar.",
+    "done": "Alterações revistas concluídas.",
+    "loading": "A carregar registos…",
+    "loadError": "Não foi possível carregar os registos. Tente novamente.",
+    "partialError": "Não foi possível carregar alguns registos. Os resultados incompletos estão ocultos; tente novamente.",
+    "retry": "Tentar novamente",
+    "mutationError": "Não foi possível guardar as alterações. Tente novamente; se houver uma eliminação pendente, conclua-a primeiro.",
+    "pending": "A eliminação está pendente. Reveja a limpeza abaixo para continuar. Registos já eliminados não serão eliminados duas vezes.",
+    "archivePolicy": "Arquivar oculta esta pessoa das listas ativas, mas mantém o perfil, notas, datas, lembretes, relações e memórias. Pode abrir o perfil pela sua ligação.",
+    "dateDelete": "Eliminar {name} e os seus lembretes? É irreversível.",
+    "memoryDelete": "Eliminar {name} e os seus lembretes? As pessoas e as restantes memórias são mantidas."
   }
 }

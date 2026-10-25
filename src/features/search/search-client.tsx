@@ -14,6 +14,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { searchLocalRecords } from "@/lib/search/local-search";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import {
@@ -83,6 +85,9 @@ const resultIcons = {
 
 export function SearchClient() {
   const { user } = useAuth();
+  const [attempt, setAttempt] = useState(0);
+  const [partial, setPartial] = useState(false);
+  const [loadedOwner, setLoadedOwner] = useState("");
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<SearchScope>("all");
@@ -101,6 +106,7 @@ export function SearchClient() {
     }
 
     const ownerId = user.uid;
+    let cancelled = false;
 
     async function loadSearchData() {
       setLoading(true);
@@ -114,7 +120,7 @@ export function SearchClient() {
           datesResult,
           interactionsResult,
           groupsResult,
-        ] = await Promise.all([
+        ] = await settleReads([
           peopleRepository.listActive(ownerId),
           personNotesRepository.list(ownerId),
           memoriesRepository.list(ownerId),
@@ -123,21 +129,30 @@ export function SearchClient() {
           groupsRepository.listByName(ownerId),
         ]);
 
+        if (cancelled) return;
         setPeople(peopleResult);
         setNotes(notesResult);
         setMemories(memoriesResult);
         setImportantDates(datesResult);
         setInteractions(interactionsResult);
         setGroups(groupsResult);
-      } catch {
+      } catch (caught) {
+        if (cancelled) return;
+        setPartial(caught instanceof ReadFailure && caught.partial);
         setError(t("searchPage", "loadError"));
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedOwner(ownerId);
+        }
       }
     }
 
     void loadSearchData();
-  }, [t, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [t, user, attempt]);
 
   const results = useMemo(
     () =>
@@ -168,6 +183,15 @@ export function SearchClient() {
   );
 
   const hasQuery = query.trim().length > 0;
+
+  if (loading || loadedOwner !== user?.uid) return <LoadState loading />;
+  if (error)
+    return (
+      <LoadState
+        partial={partial}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
 
   return (
     <div className="space-y-4">

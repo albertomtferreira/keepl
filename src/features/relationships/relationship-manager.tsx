@@ -3,13 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link2, Pencil, Save, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 import { createRelationshipSchema } from "./validation";
 
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n/i18n-context";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { relationshipsRepository } from "@/repositories/relationships";
 import type { Person, Relationship } from "@/types";
@@ -35,6 +36,8 @@ export function RelationshipManager({
   relationships: Relationship[];
 }) {
   const { user } = useAuth();
+  const mutation = useMutation();
+  const requestId = useRef<string | null>(null);
   const { locale, t } = useI18n();
   const [editing, setEditing] = useState<Relationship | "new" | null>(null);
   const [error, setError] = useState<
@@ -70,54 +73,63 @@ export function RelationshipManager({
   );
 
   function startEditing(relationship: Relationship | "new") {
+    requestId.current = null;
     setError(null);
     setEditing(relationship);
     reset(formValues(relationship, currentPerson.id));
   }
 
   async function onSubmit(values: RelationshipFormValues) {
-    if (!user) {
-      setError("signInSave");
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user) {
+        setError("signInSave");
+        return;
+      }
 
-    const otherPersonId = values.otherPersonId;
-    if (otherPersonId === currentPerson.id) {
-      setError("chooseOther");
-      return;
-    }
+      const otherPersonId = values.otherPersonId;
+      if (otherPersonId === currentPerson.id) {
+        setError("chooseOther");
+        return;
+      }
 
-    const payload = {
-      fromPersonId: currentPerson.id,
-      toPersonId: otherPersonId,
-      label: values.label,
-      ...(values.inverseLabel ? { inverseLabel: values.inverseLabel } : {}),
-      ...(values.notes ? { notes: values.notes } : {}),
-    };
+      const payload = {
+        fromPersonId: currentPerson.id,
+        toPersonId: otherPersonId,
+        label: values.label,
+        ...(values.inverseLabel ? { inverseLabel: values.inverseLabel } : {}),
+        ...(values.notes ? { notes: values.notes } : {}),
+      };
 
-    if (editing && editing !== "new") {
-      await relationshipsRepository.update(user.uid, editing.id, payload);
-    } else {
-      await relationshipsRepository.create(user.uid, payload);
-    }
+      if (editing && editing !== "new") {
+        await relationshipsRepository.update(user.uid, editing.id, payload);
+      } else {
+        await relationshipsRepository.create(
+          user.uid,
+          payload,
+          (requestId.current ??= crypto.randomUUID()),
+        );
+      }
 
-    onChange(
-      await relationshipsRepository.listForPerson(user.uid, currentPerson.id),
-    );
-    setEditing(null);
+      onChange(
+        await relationshipsRepository.listForPerson(user.uid, currentPerson.id),
+      );
+      setEditing(null);
+    });
   }
 
   async function deleteRelationship(relationship: Relationship) {
-    if (!user || !confirm(t("relationships", "deleteConfirm"))) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user || !confirm(t("relationships", "deleteConfirm"))) {
+        return;
+      }
 
-    await relationshipsRepository.delete(user.uid, relationship.id);
-    onChange(relationships.filter((item) => item.id !== relationship.id));
+      await relationshipsRepository.delete(user.uid, relationship.id);
+      onChange(relationships.filter((item) => item.id !== relationship.id));
+    });
   }
 
   return (
-    <div className="space-y-3">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-3">
       {relationships.map((relationship) => {
         const otherPersonId = getOtherRelationshipPersonId(
           relationship,
@@ -269,7 +281,8 @@ export function RelationshipManager({
           {t("relationships", "add")}
         </Button>
       )}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }
 

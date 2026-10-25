@@ -2,13 +2,14 @@
 
 import { Timestamp } from "firebase/firestore";
 import { MessageCircle, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   interactionKindLabels,
   formatInteractionDate,
 } from "@/features/interactions/interaction-format";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { interactionsRepository } from "@/repositories/interactions";
@@ -28,6 +29,8 @@ export function InteractionManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const mutation = useMutation();
+  const requestId = useRef<string | null>(null);
   const { locale, t } = useI18n();
   const [kind, setKind] = useState<InteractionKind>("message");
   const [summary, setSummary] = useState("");
@@ -42,51 +45,61 @@ export function InteractionManager({
   >(null);
 
   async function addInteraction() {
-    if (!user) {
-      setError("signInSave");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      const id = await interactionsRepository.create(user.uid, {
-        personId,
-        kind,
-        occurredAt: Timestamp.fromDate(new Date(`${occurredAt}T12:00:00`)),
-        ...(summary.trim() ? { summary: summary.trim() } : {}),
-      });
-      const created = await interactionsRepository.getById(user.uid, id);
-
-      if (created) {
-        onChange(
-          [created, ...interactions].sort(
-            (first, second) =>
-              second.occurredAt.toMillis() - first.occurredAt.toMillis(),
-          ),
-        );
+    await mutation.run(async () => {
+      if (!user) {
+        setError("signInSave");
+        return;
       }
 
-      setSummary("");
-    } catch {
-      setError("saveError");
-    } finally {
-      setSaving(false);
-    }
+      setSaving(true);
+      setError(null);
+
+      try {
+        const id = await interactionsRepository.create(
+          user.uid,
+          {
+            personId,
+            kind,
+            occurredAt: Timestamp.fromDate(new Date(`${occurredAt}T12:00:00`)),
+            ...(summary.trim() ? { summary: summary.trim() } : {}),
+          },
+          (requestId.current ??= crypto.randomUUID()),
+        );
+        const created = await interactionsRepository.getById(user.uid, id);
+
+        if (!created) throw new Error("record-unavailable");
+        if (created) {
+          onChange(
+            [created, ...interactions].sort(
+              (first, second) =>
+                second.occurredAt.toMillis() - first.occurredAt.toMillis(),
+            ),
+          );
+        }
+
+        setSummary("");
+        requestId.current = null;
+      } catch {
+        setError("saveError");
+      } finally {
+        setSaving(false);
+      }
+    });
   }
 
   async function deleteInteraction(interaction: Interaction) {
-    if (!user || !confirm(t("interactions", "deleteConfirm"))) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user || !confirm(t("interactions", "deleteConfirm"))) {
+        return;
+      }
 
-    await interactionsRepository.delete(user.uid, interaction.id);
-    onChange(interactions.filter((item) => item.id !== interaction.id));
+      await interactionsRepository.delete(user.uid, interaction.id);
+      onChange(interactions.filter((item) => item.id !== interaction.id));
+    });
   }
 
   return (
-    <div className="space-y-3">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-3">
       <div className="grid gap-2 sm:grid-cols-[auto_auto_1fr_auto]">
         <select
           aria-label={t("interactions", "kind")}
@@ -170,7 +183,8 @@ export function InteractionManager({
           ))}
         </div>
       ) : null}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }
 

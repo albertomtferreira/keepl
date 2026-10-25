@@ -424,5 +424,29 @@
     "colleague": "colleague",
     "mentee": "mentee",
     "mentor": "mentor"
+  },
+  "lifecycle": {
+    "deleteTitle": "Delete person and review dependencies",
+    "repairTitle": "Review orphaned records",
+    "deletePolicy": "Delete this person, their notes, dates, interactions, relationships, and related reminders. All memories are kept; only this person's references are removed. This cannot be undone. During cleanup, new references are blocked. If cleanup fails, review again to resume; earlier changes remain.",
+    "repairPolicy": "Find records whose referenced people, groups, dates, or memories no longer exist. Review every proposed removal before confirming. Memories are preserved. Nothing is repaired automatically.",
+    "counts": "Records to delete: {count}. Records to detach references from: {memories}.",
+    "review": "Review changes",
+    "confirm": "Confirm reviewed changes",
+    "remove": "Delete record",
+    "detach": "Remove missing references",
+    "noOrphans": "No orphaned records found.",
+    "progress": "Working… {count} dependent records acknowledged.",
+    "error": "Cleanup could not finish or the reviewed data changed. Earlier changes may remain. Review again before retrying. A pending deletion blocks edits and new references until it finishes.",
+    "done": "Reviewed changes completed.",
+    "loading": "Loading records…",
+    "loadError": "Could not load records. Try again.",
+    "partialError": "Some records could not be loaded. Incomplete results are hidden; try again.",
+    "retry": "Try again",
+    "mutationError": "Could not finish saving changes. Try again; if a deletion is pending, finish it first.",
+    "pending": "Deletion is pending. Review cleanup below to resume. Records already removed will not be removed twice.",
+    "archivePolicy": "Archiving hides this person from active lists but keeps their profile, notes, dates, reminders, relationships, and memories. You can still open the profile by its link.",
+    "dateDelete": "Delete {name} and its reminders? This cannot be undone.",
+    "memoryDelete": "Delete {name} and its reminders? People and their other memories are kept."
   }
 }

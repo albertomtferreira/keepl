@@ -3,6 +3,8 @@ import type { Timestamp } from "firebase/firestore";
 export type FirestoreTimestamp = Timestamp;
 
 export type TimestampFields = {
+  /** Internal deletion guard; excluded from portable exports and rejected on import. */
+  deletionPending?: boolean;
   createdAt: FirestoreTimestamp;
   updatedAt: FirestoreTimestamp;
 };

@@ -15,6 +15,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
@@ -28,6 +31,10 @@ import { PhotoViewerDialog } from "./photo-viewer-dialog";
 export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   const router = useRouter();
   const { user } = useAuth();
+  const mutation = useMutation();
+  const [attempt, setAttempt] = useState(0);
+  const [loadFailure, setLoadFailure] = useState<boolean | null>(null);
+  const [loadedKey, setLoadedKey] = useState("");
   const { locale, t } = useI18n();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
@@ -40,34 +47,61 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
       return;
     }
     const ownerId = user.uid;
+    const requestKey = `${user?.uid}/${memoryId}`;
+    let cancelled = false;
 
     async function loadMemory() {
       setLoading(true);
-      const [memoryResult, peopleResult] = await Promise.all([
-        memoriesRepository.getById(ownerId, memoryId),
-        peopleRepository.listActive(ownerId),
-      ]);
-      setMemory(memoryResult);
-      setPeople(peopleResult);
-      setLoading(false);
+      setLoadFailure(null);
+      try {
+        const [memoryResult, peopleResult] = await settleReads([
+          memoriesRepository.getById(ownerId, memoryId),
+          peopleRepository.listActive(ownerId),
+        ]);
+        if (cancelled) return;
+        setMemory(memoryResult);
+        setPeople(peopleResult);
+      } catch (error) {
+        if (!cancelled)
+          setLoadFailure(error instanceof ReadFailure && error.partial);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedKey(requestKey ?? "");
+        }
+      }
     }
 
     void loadMemory();
-  }, [memoryId, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [memoryId, user, attempt]);
 
   async function deleteMemory() {
-    if (
-      !user ||
-      !memory ||
-      !confirm(t("memoryDetail", "deleteConfirm", { name: memory.title }))
-    ) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (
+        !user ||
+        !memory ||
+        !confirm(t("lifecycle", "memoryDelete", { name: memory.title }))
+      ) {
+        return;
+      }
 
-    await memoriesRepository.delete(user.uid, memory.id);
-    router.push("/memories");
+      await memoriesRepository.delete(user.uid, memory.id);
+      router.push("/memories");
+    });
   }
 
+  if (loading || loadedKey !== `${user?.uid}/${memoryId}`)
+    return <LoadState loading />;
+  if (loadFailure !== null)
+    return (
+      <LoadState
+        partial={loadFailure}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
   if (loading) {
     return (
       <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
@@ -90,7 +124,7 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   const names = memoryPeopleNames(memory, people);
 
   return (
-    <div className="space-y-5">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-5">
       <Button asChild variant="ghost" size="sm">
         <Link href="/memories">
           <ArrowLeft className="size-4" aria-hidden="true" />
@@ -247,6 +281,7 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
           photos={memory.photos}
         />
       ) : null}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }

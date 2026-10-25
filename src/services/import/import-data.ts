@@ -5,6 +5,7 @@ import {
   type Transaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { checkReferences, type RecordData } from "@/services/lifecycle/plan";
 import { portableExportSchema } from "./import-schema";
 import { z } from "zod";
 
@@ -246,6 +247,39 @@ export async function commitImportChunk(
         transaction.get(doc(db, collection, record.id)),
       ),
     );
+    const inChunk = new Map(
+      chunk.map(({ collection, record }, index) => [
+        `${collection}/${record.id}`,
+        snapshots[index].exists()
+          ? snapshots[index].data()
+          : deserializeRecord(record),
+      ]),
+    );
+    const fetched = new Map<string, RecordData | null>();
+    for (const { collection, record } of chunk) {
+      await checkReferences(
+        String(record.ownerId),
+        collection,
+        record,
+        async (parentCollection, parentId) => {
+          const key = `${parentCollection}/${parentId}`;
+          if (inChunk.has(key))
+            return { ...inChunk.get(key), id: parentId } as RecordData;
+          if (!fetched.has(key)) {
+            const snapshot = await transaction.get(
+              doc(db, parentCollection, parentId),
+            );
+            fetched.set(
+              key,
+              snapshot.exists()
+                ? ({ ...snapshot.data(), id: parentId } as RecordData)
+                : null,
+            );
+          }
+          return fetched.get(key)!;
+        },
+      );
+    }
     chunk.forEach(({ collection, record }, index) => {
       const data = deserializeRecord(record);
       const { id: ignoredId, ...payload } = data;

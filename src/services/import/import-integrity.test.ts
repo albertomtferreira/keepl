@@ -149,8 +149,17 @@ it("round-trips every collection through export, preview, remapping and import w
   }
   try {
     data.collections.people[0].accessToken = "must-not-export";
+    data.collections.people[0].deletionPending = true;
+    data.collections.importantDates[0].deletionPending = true;
+    data.collections.memories[0].deletionPending = true;
     const exported = await exporter.exportKeeplData("current");
+    for (const key of ["people", "importantDates", "memories"] as const) {
+      assert.ok(!("deletionPending" in exported.collections[key][0]));
+    }
     assert.ok(!("accessToken" in exported.collections.people[0]));
+    const forged = structuredClone(exported);
+    forged.collections.people[0].deletionPending = true;
+    assert.throws(() => service.parseKeeplImportJson(JSON.stringify(forged)));
     assert.ok(
       Object.values(exported.collections)
         .flat()
@@ -403,4 +412,55 @@ it("transaction writer preserves timestamps, retries identical copies and aborts
   );
   assert.equal(store.size, 1);
   assert.equal(payload.name, "User edit");
+});
+
+it("restore chunks cannot attach records to pending, missing, or foreign lifecycle sources", async () => {
+  const { commitImportChunk } = await import("./import-data");
+  let writes = 0;
+  let parent: Record<string, unknown> | null = {
+    ownerId: "current",
+    deletionPending: true,
+  };
+  const chunk = [
+    {
+      collection: "memories" as const,
+      record: {
+        id: "memory",
+        ownerId: "current",
+        title: "Restore",
+        peopleIds: ["person"],
+        createdAt: ts,
+        updatedAt: ts,
+        startDate: ts,
+      },
+    },
+  ];
+  const run: NonNullable<Parameters<typeof commitImportChunk>[1]> = async (
+    body,
+  ) => {
+    const transaction = {
+      get: async (ref: { path: string }) => ({
+        exists: () => ref.path === "people/person" && parent !== null,
+        data: () => parent,
+      }),
+      set: () => {
+        writes++;
+        return transaction;
+      },
+    };
+    await body(
+      transaction as unknown as Parameters<Parameters<typeof run>[0]>[0],
+    );
+  };
+  for (const value of [parent, null, { ownerId: "other" }]) {
+    parent = value;
+    await assert.rejects(
+      commitImportChunk(chunk, run),
+      /reference-unavailable/,
+    );
+    assert.equal(writes, 0);
+  }
+  parent = { ownerId: "current" };
+  await commitImportChunk(chunk, run);
+  assert.equal(writes, 1);
 });

@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { groupsRepository } from "@/repositories/groups";
@@ -15,6 +18,10 @@ import { getPersonInitials, groupNamesForPerson } from "./person-format";
 
 export function PeopleListClient() {
   const { user } = useAuth();
+  const [attempt, setAttempt] = useState(0);
+  const [partial, setPartial] = useState(false);
+  const [loadedOwner, setLoadedOwner] = useState("");
+  const mutation = useMutation();
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const [people, setPeople] = useState<Person[]>([]);
@@ -29,25 +36,37 @@ export function PeopleListClient() {
       return;
     }
     const ownerId = user.uid;
+    let cancelled = false;
 
     async function loadPeople() {
       setLoading(true);
       setError(null);
 
       try {
-        const peopleResult = await peopleRepository.listActive(ownerId);
-        const groupsResult = await groupsRepository.listByName(ownerId).catch(() => []);
+        const [peopleResult, groupsResult] = await settleReads([
+          peopleRepository.listActive(ownerId),
+          groupsRepository.listByName(ownerId),
+        ]);
+        if (cancelled) return;
         setPeople(peopleResult);
         setGroups(groupsResult);
-      } catch {
+      } catch (caught) {
+        if (cancelled) return;
+        setPartial(caught instanceof ReadFailure && caught.partial);
         setError(t("peoplePage", "loadError"));
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedOwner(ownerId);
+        }
       }
     }
 
     void loadPeople();
-  }, [t, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [t, user, attempt]);
 
   const filteredPeople = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -62,24 +81,47 @@ export function PeopleListClient() {
           return true;
         }
 
-        return [person.displayName, person.firstName, person.lastName, person.nickname]
+        return [
+          person.displayName,
+          person.firstName,
+          person.lastName,
+          person.nickname,
+        ]
           .filter(Boolean)
           .some((value) => value?.toLowerCase().includes(needle));
       })
-      .sort((first, second) => first.displayName.localeCompare(second.displayName));
+      .sort((first, second) =>
+        first.displayName.localeCompare(second.displayName),
+      );
   }, [groupId, people, query]);
 
   async function archivePerson(person: Person) {
-    if (!user || !confirm(t("peoplePage", "archiveConfirm", { name: person.displayName }))) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (
+        !user ||
+        !confirm(
+          t("peoplePage", "archiveConfirm", { name: person.displayName }),
+        )
+      ) {
+        return;
+      }
 
-    await peopleRepository.archive(user.uid, person.id);
-    setPeople((current) => current.filter((item) => item.id !== person.id));
+      await peopleRepository.archive(user.uid, person.id);
+      setPeople((current) => current.filter((item) => item.id !== person.id));
+    });
   }
 
+  if (loading || loadedOwner !== user?.uid) return <LoadState loading />;
+  if (error)
+    return (
+      <LoadState
+        partial={partial}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
+
   return (
-    <div className="space-y-4">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-4">
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -110,25 +152,43 @@ export function PeopleListClient() {
         </select>
       </div>
 
-      {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("peoplePage", "loading")}</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+          {t("peoplePage", "loading")}
+        </div>
       ) : filteredPeople.length ? (
         <div className="grid gap-2">
           {filteredPeople.map((person) => {
             const groupNames = groupNamesForPerson(person, groups);
 
             return (
-              <div key={person.id} className="flex items-center gap-3 rounded-lg border bg-white p-3 shadow-sm">
-                <Link href={`/people/${person.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+              <div
+                key={person.id}
+                className="flex items-center gap-3 rounded-lg border bg-white p-3 shadow-sm"
+              >
+                <Link
+                  href={`/people/${person.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
                   <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold">
                     {getPersonInitials(person)}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="truncate font-semibold">{person.displayName}</h2>
+                    <h2 className="truncate font-semibold">
+                      {person.displayName}
+                    </h2>
                     <p className="truncate text-sm text-muted-foreground">
-                      {groupNames.length ? groupNames.join(", ") : person.emails?.[0]?.value ?? person.phoneNumbers?.[0]?.value ?? t("peoplePage", "noDetailsYet")}
+                      {groupNames.length
+                        ? groupNames.join(", ")
+                        : (person.emails?.[0]?.value ??
+                          person.phoneNumbers?.[0]?.value ??
+                          t("peoplePage", "noDetailsYet"))}
                     </p>
                   </div>
                 </Link>
@@ -137,7 +197,9 @@ export function PeopleListClient() {
                   variant="ghost"
                   size="icon"
                   title={t("peoplePage", "archive")}
-                  aria-label={t("peoplePage", "archivePerson", { name: person.displayName })}
+                  aria-label={t("peoplePage", "archivePerson", {
+                    name: person.displayName,
+                  })}
                   onClick={() => archivePerson(person)}
                 >
                   <Archive className="size-4" aria-hidden="true" />
@@ -149,10 +211,19 @@ export function PeopleListClient() {
       ) : (
         <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed bg-white/70 p-8 text-center">
           <div>
-            <UsersRound className="mx-auto mb-3 size-5 text-muted-foreground" aria-hidden="true" />
-            <h2 className="font-semibold">{people.length ? t("peoplePage", "noMatches") : t("peoplePage", "addFirstPerson")}</h2>
+            <UsersRound
+              className="mx-auto mb-3 size-5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <h2 className="font-semibold">
+              {people.length
+                ? t("peoplePage", "noMatches")
+                : t("peoplePage", "addFirstPerson")}
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {people.length ? t("peoplePage", "tryAnotherSearch") : t("peoplePage", "firstPersonHint")}
+              {people.length
+                ? t("peoplePage", "tryAnotherSearch")
+                : t("peoplePage", "firstPersonHint")}
             </p>
             {!people.length ? (
               <Button asChild className="mt-4">
@@ -165,6 +236,7 @@ export function PeopleListClient() {
           </div>
         </div>
       )}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }

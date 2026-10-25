@@ -10,13 +10,14 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { createNoteSchema } from "./validation";
 
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n/i18n-context";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { personNotesRepository } from "@/repositories/person-notes";
 import type { PersonNote } from "@/types";
@@ -33,6 +34,8 @@ export function PersonNotesManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const mutation = useMutation();
+  const requestId = useRef<string | null>(null);
   const { t } = useI18n();
   const [editing, setEditing] = useState<PersonNote | "new" | null>(null);
   const [error, setError] = useState<
@@ -58,56 +61,67 @@ export function PersonNotesManager({
   }, [isSubmitted, t, trigger]);
 
   function startEditing(note: PersonNote | "new") {
+    requestId.current = null;
     setError(null);
     setEditing(note);
     reset(formValues(note));
   }
 
   async function onSubmit(values: NoteFormValues) {
-    if (!user) {
-      setError("signInSave");
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user) {
+        setError("signInSave");
+        return;
+      }
 
-    const payload = {
-      personId,
-      body: values.body,
-      pinned: values.pinned,
-      ...(values.title ? { title: values.title } : {}),
-    };
+      const payload = {
+        personId,
+        body: values.body,
+        pinned: values.pinned,
+        ...(values.title ? { title: values.title } : {}),
+      };
 
-    if (editing && editing !== "new") {
-      await personNotesRepository.update(user.uid, editing.id, payload);
-    } else {
-      await personNotesRepository.create(user.uid, payload);
-    }
+      if (editing && editing !== "new") {
+        await personNotesRepository.update(user.uid, editing.id, payload);
+      } else {
+        await personNotesRepository.create(
+          user.uid,
+          payload,
+          (requestId.current ??= crypto.randomUUID()),
+        );
+      }
 
-    onChange(await personNotesRepository.listForPerson(user.uid, personId));
-    setEditing(null);
+      onChange(await personNotesRepository.listForPerson(user.uid, personId));
+      setEditing(null);
+    });
   }
 
   async function togglePinned(note: PersonNote) {
-    if (!user) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user) {
+        return;
+      }
 
-    await personNotesRepository.update(user.uid, note.id, {
-      pinned: !note.pinned,
+      await personNotesRepository.update(user.uid, note.id, {
+        pinned: !note.pinned,
+      });
+      onChange(
+        notes.map((item) =>
+          item.id === note.id ? { ...item, pinned: !note.pinned } : item,
+        ),
+      );
     });
-    onChange(
-      notes.map((item) =>
-        item.id === note.id ? { ...item, pinned: !note.pinned } : item,
-      ),
-    );
   }
 
   async function deleteNote(note: PersonNote) {
-    if (!user || !confirm(t("notes", "deleteConfirm"))) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user || !confirm(t("notes", "deleteConfirm"))) {
+        return;
+      }
 
-    await personNotesRepository.delete(user.uid, note.id);
-    onChange(notes.filter((item) => item.id !== note.id));
+      await personNotesRepository.delete(user.uid, note.id);
+      onChange(notes.filter((item) => item.id !== note.id));
+    });
   }
 
   const sortedNotes = [...notes].sort(
@@ -115,7 +129,7 @@ export function PersonNotesManager({
   );
 
   return (
-    <div className="space-y-3">
+    <fieldset disabled={mutation.pending} className="min-w-0 space-y-3">
       {sortedNotes.map((note) => (
         <div key={note.id} className="rounded-md border p-3">
           <div className="flex items-start justify-between gap-3">
@@ -221,7 +235,8 @@ export function PersonNotesManager({
           {t("notes", "add")}
         </Button>
       )}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }
 

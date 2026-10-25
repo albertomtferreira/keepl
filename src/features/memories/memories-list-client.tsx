@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { MemoryCard } from "@/features/memories/memory-card";
+import { LoadState } from "@/components/ui/load-state";
+import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { memoriesRepository } from "@/repositories/memories";
@@ -14,6 +16,9 @@ import type { Memory, Person } from "@/types";
 
 export function MemoriesListClient() {
   const { user } = useAuth();
+  const [attempt, setAttempt] = useState(0);
+  const [partial, setPartial] = useState(false);
+  const [loadedOwner, setLoadedOwner] = useState("");
   const { t } = useI18n();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -26,27 +31,37 @@ export function MemoriesListClient() {
       return;
     }
     const ownerId = user.uid;
+    let cancelled = false;
 
     async function loadMemories() {
       setLoading(true);
       setError(null);
 
       try {
-        const [memoriesResult, peopleResult] = await Promise.all([
+        const [memoriesResult, peopleResult] = await settleReads([
           memoriesRepository.listRecent(ownerId, 50),
           peopleRepository.listActive(ownerId),
         ]);
+        if (cancelled) return;
         setMemories(memoriesResult);
         setPeople(peopleResult);
-      } catch {
+      } catch (caught) {
+        if (cancelled) return;
+        setPartial(caught instanceof ReadFailure && caught.partial);
         setError(t("memoriesPage", "loadError"));
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadedOwner(ownerId);
+        }
       }
     }
 
     void loadMemories();
-  }, [t, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [t, user, attempt]);
 
   const filteredMemories = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -55,7 +70,9 @@ export function MemoriesListClient() {
       return memories;
     }
 
-    const peopleById = new Map(people.map((person) => [person.id, person.displayName.toLowerCase()]));
+    const peopleById = new Map(
+      people.map((person) => [person.id, person.displayName.toLowerCase()]),
+    );
 
     return memories.filter((memory) =>
       [
@@ -69,6 +86,15 @@ export function MemoriesListClient() {
         .some((value) => value?.toLowerCase().includes(needle)),
     );
   }, [memories, people, query]);
+
+  if (loading || loadedOwner !== user?.uid) return <LoadState loading />;
+  if (error)
+    return (
+      <LoadState
+        partial={partial}
+        retry={() => setAttempt((value) => value + 1)}
+      />
+    );
 
   return (
     <div className="space-y-4">
@@ -90,10 +116,16 @@ export function MemoriesListClient() {
         </Button>
       </div>
 
-      {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("memoriesPage", "loading")}</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+          {t("memoriesPage", "loading")}
+        </div>
       ) : filteredMemories.length ? (
         <div className="grid gap-3">
           {filteredMemories.map((memory) => (
@@ -103,10 +135,19 @@ export function MemoriesListClient() {
       ) : (
         <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed bg-white/70 p-8 text-center">
           <div>
-            <Library className="mx-auto mb-3 size-5 text-muted-foreground" aria-hidden="true" />
-            <h2 className="font-semibold">{memories.length ? t("memoriesPage", "noMatches") : t("memoriesPage", "addFirstMemory")}</h2>
+            <Library
+              className="mx-auto mb-3 size-5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <h2 className="font-semibold">
+              {memories.length
+                ? t("memoriesPage", "noMatches")
+                : t("memoriesPage", "addFirstMemory")}
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {memories.length ? t("memoriesPage", "tryAnotherSearch") : t("memoriesPage", "firstMemoryHint")}
+              {memories.length
+                ? t("memoriesPage", "tryAnotherSearch")
+                : t("memoriesPage", "firstMemoryHint")}
             </p>
           </div>
         </div>

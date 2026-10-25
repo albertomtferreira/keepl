@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { LifecycleReview } from "@/features/lifecycle/lifecycle-review";
 import { LanguageSettings } from "@/features/localization/language-settings";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -201,6 +202,7 @@ export function SettingsClient() {
       </section>
 
       <LanguageSettings />
+      <LifecycleReview key={user?.uid} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.map((section) => (

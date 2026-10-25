@@ -13,23 +13,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-h-dvh bg-[#fbfaf7] text-foreground">
+    <div
+      key={user?.uid}
+      className="flex min-h-dvh bg-[#fbfaf7] text-foreground"
+    >
       <AppNav />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-[#fbfaf7]/90 px-4 backdrop-blur md:px-8">
-          <Link href="/home" className="text-lg font-semibold tracking-normal md:hidden">
+          <Link
+            href="/home"
+            className="text-lg font-semibold tracking-normal md:hidden"
+          >
             Keepl
           </Link>
           <div className="hidden text-sm text-muted-foreground md:block">
             {user?.displayName || user?.email}
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label={t("app", "settings")}>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label={t("app", "settings")}
+            >
               <Link href="/settings">
                 <Settings className="size-4" aria-hidden="true" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" onClick={signOutUser} aria-label={t("app", "signOut")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={signOutUser}
+              aria-label={t("app", "signOut")}
+            >
               <LogOut className="size-4" aria-hidden="true" />
             </Button>
           </div>

@@ -424,5 +424,29 @@
     "colleague": "collègue",
     "mentee": "élève",
     "mentor": "mentor"
+  },
+  "lifecycle": {
+    "deleteTitle": "Supprimer la personne et examiner les dépendances",
+    "repairTitle": "Examiner les données orphelines",
+    "deletePolicy": "Supprime cette personne, ses notes, dates, interactions, relations et rappels associés. Tous les souvenirs sont conservés ; seules les références à cette personne sont retirées. Action irréversible. Les nouvelles références sont bloquées pendant le nettoyage. En cas d’échec, examinez à nouveau pour reprendre ; les changements précédents restent appliqués.",
+    "repairPolicy": "Recherche les données référençant des personnes, groupes, dates ou souvenirs supprimés. Examinez chaque retrait avant confirmation. Les souvenirs sont préservés. Aucune réparation automatique.",
+    "counts": "Éléments à supprimer : {count}. Éléments dont les références seront retirées : {memories}.",
+    "review": "Examiner les changements",
+    "confirm": "Confirmer les changements examinés",
+    "remove": "Supprimer l’élément",
+    "detach": "Retirer les références manquantes",
+    "noOrphans": "Aucune donnée orpheline trouvée.",
+    "progress": "Traitement… {count} éléments dépendants confirmés.",
+    "error": "Le nettoyage a échoué ou les données ont changé. Des changements antérieurs peuvent rester appliqués. Examinez à nouveau avant de réessayer. Une suppression en attente bloque les modifications et nouvelles références jusqu’à sa fin.",
+    "done": "Changements examinés effectués.",
+    "loading": "Chargement des données…",
+    "loadError": "Impossible de charger les données. Réessayez.",
+    "partialError": "Certaines données n’ont pas pu être chargées. Les résultats incomplets sont masqués ; réessayez.",
+    "retry": "Réessayer",
+    "mutationError": "Impossible d’enregistrer les changements. Réessayez ; si une suppression est en attente, terminez-la d’abord.",
+    "pending": "Suppression en attente. Examinez le nettoyage ci-dessous pour reprendre. Les éléments déjà supprimés ne seront pas supprimés deux fois.",
+    "archivePolicy": "L’archivage masque cette personne des listes actives mais conserve son profil, notes, dates, rappels, relations et souvenirs. Le profil reste accessible par son lien.",
+    "dateDelete": "Supprimer {name} et ses rappels ? Action irréversible.",
+    "memoryDelete": "Supprimer {name} et ses rappels ? Les personnes et leurs autres souvenirs sont conservés."
   }
 }

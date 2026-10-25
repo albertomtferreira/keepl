@@ -9,12 +9,14 @@ import {
 } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import { CalendarPlus, Pencil, Save, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { createDateSchema, reminderPresetValues } from "./validation";
 
 import { Button } from "@/components/ui/button";
+import { useMutation, MutationError } from "@/lib/async/use-mutation";
+import { LoadState } from "@/components/ui/load-state";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import {
@@ -42,6 +44,11 @@ export function ImportantDateManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const mutation = useMutation();
+  const requestId = useRef<string | null>(null);
+  const editRevision = useRef(0);
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderFailed, setReminderFailed] = useState(false);
   const { locale, t } = useI18n();
   const [today] = useState(() => new Date());
   const [editing, setEditing] = useState<ImportantDate | "new" | null>(null);
@@ -66,11 +73,22 @@ export function ImportantDateManager({
     values: formValues(editing),
   });
 
+  useEffect(
+    () => () => {
+      ++editRevision.current;
+    },
+    [],
+  );
+
   useEffect(() => {
     if (isSubmitted) void trigger();
   }, [isSubmitted, t, trigger]);
 
   function startEditing(date: ImportantDate | "new") {
+    const revision = ++editRevision.current;
+    setReminderFailed(false);
+    setReminderLoading(false);
+    requestId.current = null;
     setError(null);
     setEditing(date);
     reset(formValues(date));
@@ -79,76 +97,103 @@ export function ImportantDateManager({
       return;
     }
 
+    setReminderLoading(true);
     void remindersRepository
       .listForImportantDate(user.uid, date.id)
       .then((reminders) => {
+        if (editRevision.current !== revision) return;
         const scheduledReminder = reminders.find(
           (reminder) => reminder.status === "scheduled",
         );
         reset(formValues(date, scheduledReminder?.remindAt.toDate()));
+      })
+      .catch(() => {
+        if (editRevision.current === revision) setReminderFailed(true);
+      })
+      .finally(() => {
+        if (editRevision.current === revision) setReminderLoading(false);
       });
   }
 
   async function onSubmit(values: DateFormValues) {
-    if (!user) {
-      setError("signInSave");
-      return;
-    }
+    await mutation.run(async () => {
+      if (!user) {
+        setError("signInSave");
+        return;
+      }
 
-    const date = flexibleDateFromInput(values.date, values.includeYear);
-    if (!date) {
-      setError("invalidDate");
-      return;
-    }
+      const date = flexibleDateFromInput(values.date, values.includeYear);
+      if (!date) {
+        setError("invalidDate");
+        return;
+      }
 
-    const payload = {
-      personId,
-      title: values.title,
-      date,
-      kind: values.kind as ImportantDateKind,
-      repeatsAnnually: values.repeatsAnnually,
-      ...(values.notes ? { notes: values.notes } : {}),
-    };
+      const payload = {
+        personId,
+        title: values.title,
+        date,
+        kind: values.kind as ImportantDateKind,
+        repeatsAnnually: values.repeatsAnnually,
+        ...(values.notes ? { notes: values.notes } : {}),
+      };
 
-    let importantDateId: string;
+      let importantDateId: string;
 
-    if (editing && editing !== "new") {
-      importantDateId = editing.id;
-      await importantDatesRepository.update(user.uid, importantDateId, payload);
-    } else {
-      importantDateId = await importantDatesRepository.create(
-        user.uid,
-        payload,
+      if (editing && editing !== "new") {
+        importantDateId = editing.id;
+        await importantDatesRepository.update(
+          user.uid,
+          importantDateId,
+          payload,
+        );
+      } else {
+        importantDateId = await importantDatesRepository.create(
+          user.uid,
+          payload,
+          (requestId.current ??= crypto.randomUUID()),
+        );
+      }
+
+      await replaceReminderForImportantDate(user.uid, importantDateId, {
+        date,
+        personId,
+        reminderPreset: values.reminderPreset,
+        repeatsAnnually: values.repeatsAnnually,
+        title: values.title,
+      });
+
+      onChange(
+        await importantDatesRepository.listForPerson(user.uid, personId),
       );
-    }
-
-    await replaceReminderForImportantDate(user.uid, importantDateId, {
-      date,
-      personId,
-      reminderPreset: values.reminderPreset,
-      repeatsAnnually: values.repeatsAnnually,
-      title: values.title,
+      setEditing(null);
     });
-
-    onChange(await importantDatesRepository.listForPerson(user.uid, personId));
-    setEditing(null);
   }
 
   async function deleteDate(date: ImportantDate) {
-    if (
-      !user ||
-      !confirm(t("importantDates", "deleteConfirm", { name: date.title }))
-    ) {
-      return;
-    }
+    await mutation.run(async () => {
+      if (
+        !user ||
+        !confirm(t("lifecycle", "dateDelete", { name: date.title }))
+      ) {
+        return;
+      }
 
-    await importantDatesRepository.delete(user.uid, date.id);
-    await deleteRemindersForImportantDate(user.uid, date.id);
-    onChange(dates.filter((item) => item.id !== date.id));
+      await importantDatesRepository.delete(user.uid, date.id);
+      onChange(dates.filter((item) => item.id !== date.id));
+    });
   }
 
   return (
-    <div className="space-y-3">
+    <fieldset
+      disabled={mutation.pending || reminderLoading}
+      className="min-w-0 space-y-3"
+    >
+      {reminderLoading ? (
+        <p role="status">{t("lifecycle", "loading")}</p>
+      ) : null}
+      {reminderFailed ? (
+        <LoadState retry={() => editing && startEditing(editing)} />
+      ) : null}
       {dates.map((date) => {
         const next = getNextAnnualOccurrence(date.date);
         const daysUntil = next
@@ -277,12 +322,16 @@ export function ImportantDateManager({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setEditing(null)}
+              onClick={() => {
+                ++editRevision.current;
+                setEditing(null);
+                setReminderFailed(false);
+              }}
             >
               <X className="size-4" aria-hidden="true" />
               {t("common", "cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || reminderFailed}>
               <Save className="size-4" aria-hidden="true" />
               {t("common", "save")}
             </Button>
@@ -299,7 +348,8 @@ export function ImportantDateManager({
           {t("importantDates", "add")}
         </Button>
       )}
-    </div>
+      <MutationError failed={mutation.failed} />
+    </fieldset>
   );
 }
 
@@ -372,13 +422,17 @@ async function replaceReminderForImportantDate(
     return;
   }
 
-  await remindersRepository.create(ownerId, {
-    title: values.title,
-    remindAt: Timestamp.fromDate(remindAt),
-    status: "scheduled",
-    personId: values.personId,
-    importantDateId,
-  });
+  await remindersRepository.create(
+    ownerId,
+    {
+      title: values.title,
+      remindAt: Timestamp.fromDate(remindAt),
+      status: "scheduled",
+      personId: values.personId,
+      importantDateId,
+    },
+    `date-reminder-${importantDateId}`,
+  );
 }
 
 async function deleteRemindersForImportantDate(
