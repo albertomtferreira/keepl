@@ -1,7 +1,8 @@
 {
   "app": {
     "settings": "Ajustes",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "opening": "Abriendo Keepl"
   },
   "nav": {
     "home": "Inicio",
@@ -21,7 +22,13 @@
     "notConnected": "No conectado",
     "permissionRequired": "Permiso necesario",
     "connected": "Conectado",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "add": "Añadir",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "signInSave": "Vuelve a iniciar sesión antes de guardar."
   },
   "dates": {
     "dateNotSet": "Fecha sin definir",
@@ -48,9 +55,11 @@
     "settingsTitle": "Ajustes",
     "settingsDescription": "La cuenta y los límites de integración están aquí desde el principio, sin pedir permisos adicionales de Google.",
     "graphTitle": "Grafo de relaciones",
-    "graphDescription": "Ve c?mo se conectan tus personas usando solo relaciones que ya guardaste.",
+    "graphDescription": "Ve cómo se conectan tus personas usando solo relaciones que ya guardaste.",
     "exportImportTitle": "Exportar e importar",
-    "exportImportDescription": "Descarga una copia JSON portable o revisa un archivo de Keepl antes de importar registros seleccionados."
+    "exportImportDescription": "Descarga una copia JSON portable o revisa un archivo de Keepl antes de importar registros seleccionados.",
+    "editMemoryTitle": "Editar recuerdo",
+    "editMemoryDescription": "Ajusta los detalles manteniendo la conexión con las personas."
   },
   "home": {
     "people": "Personas",
@@ -141,7 +150,8 @@
     "saveError": "No se pudo guardar este recuerdo.",
     "validationTitle": "El título es obligatorio",
     "validationStartDate": "La fecha de inicio es obligatoria",
-    "validationEndDate": "La fecha de fin debe ser posterior a la fecha de inicio"
+    "validationEndDate": "La fecha de fin debe ser posterior a la fecha de inicio",
+    "photosRecovery": "Vuelve a conectar Google Photos si caduca el acceso. Si una foto no está disponible, edita el recuerdo, selecciónala de nuevo y guarda para actualizar su referencia. Puedes cancelar y reintentar; permite las ventanas emergentes si están bloqueadas."
   },
   "searchPage": {
     "scopeAll": "Todo",
@@ -228,20 +238,21 @@
     "notificationPermission": "Permiso del navegador no solicitado",
     "notificationPermissionDetail": "Las notificaciones de recordatorios pedirán permiso solo cuando esas funciones estén activadas.",
     "progressivePermissions": "Permisos progresivos",
-    "progressivePermissionsDetail": "Keepl solo usa el inicio de sesión de Google por ahora. Contactos, Fotos, Calendario y notificaciones permanecen detrás de sus propios pasos futuros de conexión."
+    "progressivePermissionsDetail": "Keepl solo usa el inicio de sesión de Google por ahora. Contactos, Fotos, Calendario y notificaciones permanecen detrás de sus propios pasos futuros de conexión.",
+    "photosLocalDisconnect": "Desconectar borra el acceso a Photos en esta sesión de Keepl. No revoca el permiso de Google ni elimina las referencias guardadas. Para revocar el permiso, usa la configuración de tu cuenta de Google. Vuelve a conectar después de recargar Keepl."
   },
   "graphPage": {
     "title": "Grafo de relaciones",
     "miniTitle": "Mapa de relaciones",
     "openFullGraph": "Abrir grafo",
-    "graphAria": "Visualizaci?n del grafo de relaciones",
-    "relationshipTypeFilter": "Tipo de relaci?n",
+    "graphAria": "Visualización del grafo de relaciones",
+    "relationshipTypeFilter": "Tipo de relación",
     "groupFilter": "Grupo",
     "allRelationshipTypes": "Todos los tipos",
     "allGroups": "Todos los grupos",
     "listTitle": "Lista de relaciones",
-    "noRelationships": "Ninguna relaci?n coincide con estos filtros.",
-    "empty": "A?ade relaciones desde el perfil de una persona para verlas aqu?.",
+    "noRelationships": "Ninguna relación coincide con estos filtros.",
+    "empty": "Añade relaciones desde el perfil de una persona para verlas aquí.",
     "loading": "Cargando grafo de relaciones...",
     "loadError": "No se pudo cargar el grafo de relaciones."
   },
@@ -277,5 +288,141 @@
     "candidate": "Posible coincidencia — selecciona para crear una copia independiente",
     "dependencies": "Selecciona los registros referenciados o desmarca los dependientes antes de confirmar:",
     "progress": "{count} de {total} registros guardados o ya restaurados."
+  },
+  "personProfile": {
+    "loading": "Cargando persona...",
+    "notFound": "Persona no encontrada",
+    "back": "Volver a personas",
+    "deleteConfirm": "¿Eliminar a {name}? Esta acción no se puede deshacer.",
+    "nickname": "Se le conoce como {name}",
+    "lastInteraction": "Última interacción {date}",
+    "about": "Acerca de",
+    "birthday": "Cumpleaños",
+    "importantDates": "Fechas importantes",
+    "notes": "Notas",
+    "relationships": "Relaciones",
+    "interactions": "Interacciones",
+    "socialProfiles": "Perfiles sociales",
+    "groups": "Grupos",
+    "empty": "Todavía no hay nada aquí.",
+    "editTitle": "Editar persona",
+    "editDescription": "Actualiza los detalles que guardas sobre {name}."
+  },
+  "interactions": {
+    "call": "Llamada",
+    "message": "Mensaje",
+    "email": "Correo",
+    "visit": "Visita",
+    "event": "Evento",
+    "other": "Otro",
+    "saveError": "No se pudo añadir esta interacción.",
+    "deleteConfirm": "¿Eliminar esta interacción?",
+    "delete": "Eliminar interacción",
+    "summary": "Una nota rápida",
+    "kind": "Tipo de interacción",
+    "date": "Fecha de interacción"
+  },
+  "notes": {
+    "validationBody": "La nota es obligatoria",
+    "deleteConfirm": "¿Eliminar esta nota?",
+    "togglePinned": "Fijar o desfijar",
+    "edit": "Editar nota",
+    "delete": "Eliminar nota",
+    "title": "Título",
+    "body": "Nota",
+    "pin": "Fijar nota",
+    "add": "Añadir nota"
+  },
+  "importantDates": {
+    "validationTitle": "El título es obligatorio",
+    "validationDate": "La fecha es obligatoria",
+    "invalidDate": "Usa una fecha válida.",
+    "deleteConfirm": "¿Eliminar {name}?",
+    "edit": "Editar fecha",
+    "delete": "Eliminar fecha",
+    "title": "Título",
+    "date": "Fecha",
+    "kind": "Tipo",
+    "birthday": "Cumpleaños",
+    "anniversary": "Aniversario",
+    "holiday": "Festivo",
+    "custom": "Personalizado",
+    "includeYear": "Se conoce el año",
+    "repeatsAnnually": "Se repite cada año",
+    "reminder": "Recordatorio",
+    "none": "Sin recordatorio",
+    "sameDay": "El mismo día",
+    "dayBefore": "1 día antes",
+    "weekBefore": "1 semana antes",
+    "twoWeeksBefore": "2 semanas antes",
+    "monthBefore": "1 mes antes",
+    "notes": "Notas",
+    "add": "Añadir fecha"
+  },
+  "relationships": {
+    "validationPerson": "Elige una persona",
+    "validationLabel": "La relación es obligatoria",
+    "chooseOther": "Elige a otra persona.",
+    "deleteConfirm": "¿Eliminar esta relación?",
+    "unknown": "Persona desconocida",
+    "edit": "Editar relación",
+    "delete": "Eliminar relación",
+    "person": "Persona",
+    "choose": "Elige a alguien",
+    "fromLabel": "{name} es su",
+    "toLabel": "Esta persona es su",
+    "placeholder": "Amigo, padre, primo...",
+    "optional": "Opcional",
+    "notes": "Notas",
+    "add": "Añadir relación"
+  },
+  "memoryDetail": {
+    "loading": "Cargando recuerdo...",
+    "notFound": "Recuerdo no encontrado",
+    "back": "Volver a recuerdos",
+    "deleteConfirm": "¿Eliminar «{name}»? Esta acción no se puede deshacer.",
+    "noPeople": "Todavía no hay personas asociadas."
+  },
+  "login": {
+    "tagline": "Recuerdos privados centrados en las personas.",
+    "title": "Recuerda a las personas y los detalles que hacen cercana la vida.",
+    "description": "Inicia sesión con Google para guardar personas, recuerdos, fechas y notas en tu espacio privado de Keepl.",
+    "continue": "Continuar con Google",
+    "keepClose": "Mantén cerca a las personas",
+    "hint": "Keepl ofrece un lugar tranquilo para nombres, fechas, notas, recuerdos y sus relaciones.",
+    "error": "No se pudo iniciar sesión con Google. Inténtalo de nuevo."
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "description": "Keepl puede abrir su interfaz instalada. Reconecta para actualizar personas, recuerdos, fechas y recordatorios.",
+    "home": "Volver al inicio"
+  },
+  "searchResults": {
+    "nickname": "Apodo: {name}",
+    "untitledNote": "Nota sin título",
+    "noteAbout": "Nota sobre {name}",
+    "note": "Nota",
+    "dateFor": "Fecha de {name}",
+    "importantDate": "Fecha importante",
+    "interactionWith": "Interacción con {name}",
+    "interaction": "Interacción",
+    "group": "Grupo"
+  },
+  "relationshipInverses": {
+    "parent": "progenitor",
+    "child": "hijo/hija",
+    "sibling": "hermano/hermana",
+    "spouse": "cónyuge",
+    "partner": "pareja",
+    "friend": "amigo/amiga",
+    "best friend": "mejor amigo/amiga",
+    "cousin": "primo/prima",
+    "niece/nephew": "sobrina/sobrino",
+    "aunt/uncle": "tía/tío",
+    "grandparent": "abuelo/abuela",
+    "grandchild": "nieto/nieta",
+    "colleague": "colega",
+    "mentee": "aprendiz",
+    "mentor": "mentor"
   }
 }

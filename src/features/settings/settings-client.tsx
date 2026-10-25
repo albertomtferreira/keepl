@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LanguageSettings } from "@/features/localization/language-settings";
@@ -24,7 +24,11 @@ import {
   type GoogleIntegrationStatus,
 } from "@/services/google/integration-status";
 import { getGoogleContactsIntegrationStatus } from "@/services/google/contacts";
-import { clearGooglePhotosAccess, getGooglePhotosIntegrationStatus } from "@/services/google/photos";
+import {
+  clearGooglePhotosAccess,
+  getGooglePhotosIntegrationStatus,
+  subscribeGooglePhotos,
+} from "@/services/google/photos";
 import { connectGooglePhotos } from "@/services/google/photos/auth";
 
 type SettingsSection = {
@@ -40,7 +44,10 @@ const neutralStatus: GoogleIntegrationStatus = {
   detail: "",
 };
 
-const permissionStatus = (label: string, detail: string): GoogleIntegrationStatus => ({
+const permissionStatus = (
+  label: string,
+  detail: string,
+): GoogleIntegrationStatus => ({
   state: "permission-required",
   label,
   detail,
@@ -55,10 +62,21 @@ const stateStyles = {
 export function SettingsClient() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [photosStatus, setPhotosStatus] = useState(() => getGooglePhotosIntegrationStatus());
+  const [photosStatus, setPhotosStatus] = useState(() =>
+    getGooglePhotosIntegrationStatus(),
+  );
+  useEffect(
+    () =>
+      subscribeGooglePhotos(() =>
+        setPhotosStatus(getGooglePhotosIntegrationStatus()),
+      ),
+    [],
+  );
   const [photosBusy, setPhotosBusy] = useState(false);
   const [photosError, setPhotosError] = useState<string | null>(null);
-  const provider = user?.providerData.find((profile) => profile.providerId === "google.com");
+  const provider = user?.providerData.find(
+    (profile) => profile.providerId === "google.com",
+  );
   const googleStatus: GoogleIntegrationStatus = provider
     ? {
         state: "connected",
@@ -164,13 +182,20 @@ export function SettingsClient() {
             />
           ) : (
             <div className="flex size-12 items-center justify-center rounded-full border bg-secondary">
-              <UserRound className="size-5 text-muted-foreground" aria-hidden="true" />
+              <UserRound
+                className="size-5 text-muted-foreground"
+                aria-hidden="true"
+              />
             </div>
           )}
           <div className="min-w-0">
             <h2 className="font-semibold">{t("settings", "account")}</h2>
-            <p className="mt-1 truncate text-sm">{user?.displayName || t("common", "signedIn")}</p>
-            <p className="mt-1 truncate text-sm text-muted-foreground">{user?.email}</p>
+            <p className="mt-1 truncate text-sm">
+              {user?.displayName || t("common", "signedIn")}
+            </p>
+            <p className="mt-1 truncate text-sm text-muted-foreground">
+              {user?.email}
+            </p>
           </div>
         </div>
       </section>
@@ -192,9 +217,14 @@ export function SettingsClient() {
 
       <section className="rounded-lg border bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
+          <ShieldCheck
+            className="mt-0.5 size-5 text-muted-foreground"
+            aria-hidden="true"
+          />
           <div>
-            <h2 className="font-semibold">{t("settings", "progressivePermissions")}</h2>
+            <h2 className="font-semibold">
+              {t("settings", "progressivePermissions")}
+            </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {t("settings", "progressivePermissionsDetail")}
             </p>
@@ -205,7 +235,11 @@ export function SettingsClient() {
   );
 }
 
-function localizePermissionStatus(status: GoogleIntegrationStatus, label: string, detail: string): GoogleIntegrationStatus {
+function localizePermissionStatus(
+  status: GoogleIntegrationStatus,
+  label: string,
+  detail: string,
+): GoogleIntegrationStatus {
   if (status.state !== "permission-required") {
     return status;
   }
@@ -242,18 +276,28 @@ function IntegrationCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-secondary">
-            <section.icon className="size-5 text-muted-foreground" aria-hidden="true" />
+            <section.icon
+              className="size-5 text-muted-foreground"
+              aria-hidden="true"
+            />
           </div>
           <div className="min-w-0">
             <h2 className="font-semibold">{section.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{section.status.label}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {section.status.label}
+            </p>
           </div>
         </div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${stateStyles[section.status.state]}`}>
-          {stateLabels[section.status.state] ?? googleIntegrationStateLabels[section.status.state]}
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${stateStyles[section.status.state]}`}
+        >
+          {stateLabels[section.status.state] ??
+            googleIntegrationStateLabels[section.status.state]}
         </span>
       </div>
-      <p className="mt-4 text-sm leading-6 text-muted-foreground">{section.status.detail}</p>
+      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+        {section.status.detail}
+      </p>
       {section.action === "data" ? (
         <Button asChild variant="outline" size="sm" className="mt-4">
           <Link href="/export">{t("settings", "openDataTools")}</Link>
@@ -261,16 +305,34 @@ function IntegrationCard({
       ) : null}
       {section.action === "photos" ? (
         <div className="mt-4 flex flex-wrap gap-2">
+          <p className="basis-full text-sm text-muted-foreground">
+            {t("settings", "photosLocalDisconnect")}
+          </p>
           {section.status.state === "connected" ? (
-            <Button type="button" variant="outline" size="sm" onClick={onDisconnectPhotos}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onDisconnectPhotos}
+            >
               {t("settings", "disconnectPhotos")}
             </Button>
           ) : (
-            <Button type="button" variant="outline" size="sm" onClick={onConnectPhotos} disabled={photosBusy}>
-              {photosBusy ? t("settings", "connecting") : t("settings", "connectPhotos")}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onConnectPhotos}
+              disabled={photosBusy}
+            >
+              {photosBusy
+                ? t("settings", "connecting")
+                : t("settings", "connectPhotos")}
             </Button>
           )}
-          {photosError ? <p className="basis-full text-sm text-destructive">{photosError}</p> : null}
+          {photosError ? (
+            <p className="basis-full text-sm text-destructive">{photosError}</p>
+          ) : null}
         </div>
       ) : null}
     </section>

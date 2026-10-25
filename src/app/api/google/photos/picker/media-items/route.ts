@@ -1,46 +1,22 @@
-import { NextResponse } from "next/server";
-
-const pickerApiBaseUrl = "https://photospicker.googleapis.com/v1";
-
+import {
+  proxyPhotos,
+  proxyError,
+  validSessionId,
+} from "@/services/google/photos/proxy";
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
-  const accessToken = params.get("accessToken");
-  const sessionId = params.get("sessionId");
-
-  if (!accessToken || !sessionId) {
-    return NextResponse.json({ error: "Missing Google Photos access token or session ID." }, { status: 400 });
-  }
-
-  const url = new URL(`${pickerApiBaseUrl}/mediaItems`);
-  url.searchParams.set("sessionId", sessionId);
-  url.searchParams.set("pageSize", params.get("pageSize") ?? "100");
-
-  const pageToken = params.get("pageToken");
-
-  if (pageToken) {
-    url.searchParams.set("pageToken", pageToken);
-  }
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  const body = await readJsonResponse(response);
-
-  return NextResponse.json(body, { status: response.status });
-}
-
-async function readJsonResponse(response: Response) {
-  const text = await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return { error: text };
-  }
+  const id = params.get("sessionId") ?? "";
+  const size = params.get("pageSize") ?? "100";
+  const page = params.get("pageToken");
+  if (
+    !validSessionId(id) ||
+    !/^(?:[1-9]|[1-9][0-9]|100)$/.test(size) ||
+    (page && page.length > 4096)
+  )
+    return proxyError(400);
+  const url = new URL("https://photospicker.googleapis.com/v1/mediaItems");
+  url.searchParams.set("sessionId", id);
+  url.searchParams.set("pageSize", size);
+  if (page) url.searchParams.set("pageToken", page);
+  return proxyPhotos(request, url);
 }

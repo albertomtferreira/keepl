@@ -1,3 +1,5 @@
+import { createTranslator, messages } from "@/lib/i18n/translate";
+import type { Locale } from "@/types/i18n";
 import type { Relationship } from "@/types";
 
 const inverseLabels = new Map<string, string>([
@@ -30,24 +32,44 @@ const inverseLabels = new Map<string, string>([
   ["mentee", "mentor"],
 ]);
 
-export function resolveInverseRelationshipLabel(label: string) {
+export function resolveInverseRelationshipLabel(
+  label: string,
+  locale: Locale = "en",
+) {
   const normalized = normalizeLabel(label);
-  return inverseLabels.get(normalized) ?? label;
+  const inferred = inverseLabels.get(normalized);
+  if (!inferred) return label;
+  return inferred in messages.en.relationshipInverses
+    ? createTranslator(locale)(
+        "relationshipInverses",
+        inferred as keyof typeof messages.en.relationshipInverses,
+      )
+    : inferred;
 }
 
-export function getRelationshipLabelFromPerspective(relationship: Relationship, currentPersonId: string) {
+export function getRelationshipLabelFromPerspective(
+  relationship: Relationship,
+  currentPersonId: string,
+  locale: Locale = "en",
+) {
   if (relationship.fromPersonId === currentPersonId) {
     return relationship.label;
   }
 
   if (relationship.toPersonId === currentPersonId) {
-    return relationship.inverseLabel || resolveInverseRelationshipLabel(relationship.label);
+    return (
+      relationship.inverseLabel ||
+      resolveInverseRelationshipLabel(relationship.label, locale)
+    );
   }
 
   return relationship.label;
 }
 
-export function getOtherRelationshipPersonId(relationship: Relationship, currentPersonId: string) {
+export function getOtherRelationshipPersonId(
+  relationship: Relationship,
+  currentPersonId: string,
+) {
   if (relationship.fromPersonId === currentPersonId) {
     return relationship.toPersonId;
   }

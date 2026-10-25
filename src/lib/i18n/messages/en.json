@@ -1,7 +1,8 @@
 {
   "app": {
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "opening": "Opening Keepl"
   },
   "nav": {
     "home": "Home",
@@ -21,7 +22,13 @@
     "notConnected": "Not connected",
     "permissionRequired": "Permission required",
     "connected": "Connected",
-    "close": "Close"
+    "close": "Close",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "signInSave": "Sign in again before saving."
   },
   "dates": {
     "dateNotSet": "Date not set",
@@ -50,7 +57,9 @@
     "graphTitle": "Relationship graph",
     "graphDescription": "See how your people connect, using only relationships you have already saved.",
     "exportImportTitle": "Export and import",
-    "exportImportDescription": "Download a portable backup or preview a Keepl JSON file before importing selected records."
+    "exportImportDescription": "Download a portable backup or preview a Keepl JSON file before importing selected records.",
+    "editMemoryTitle": "Edit memory",
+    "editMemoryDescription": "Tune the details while keeping the people connection intact."
   },
   "home": {
     "people": "People",
@@ -141,7 +150,8 @@
     "saveError": "Could not save this memory.",
     "validationTitle": "Title is required",
     "validationStartDate": "Start date is required",
-    "validationEndDate": "End date must be after the start date"
+    "validationEndDate": "End date must be after the start date",
+    "photosRecovery": "Connect Google Photos again if access expires. If a photo is unavailable, edit the memory, select it again, and save to refresh its reference. You can cancel and retry the picker; allow popups if it is blocked."
   },
   "searchPage": {
     "scopeAll": "All",
@@ -228,7 +238,8 @@
     "notificationPermission": "Browser permission not requested",
     "notificationPermissionDetail": "Reminder notifications will ask only when notification features are enabled.",
     "progressivePermissions": "Progressive permissions",
-    "progressivePermissionsDetail": "Keepl only uses Google sign-in right now. Contacts, Photos, Calendar, and notification permissions are kept behind their own future connection steps."
+    "progressivePermissionsDetail": "Keepl only uses Google sign-in right now. Contacts, Photos, Calendar, and notification permissions are kept behind their own future connection steps.",
+    "photosLocalDisconnect": "Disconnect clears Photos access in this Keepl session. It does not revoke Google permission or delete saved references. To revoke permission, use your Google Account settings. Reconnect after reloading Keepl."
   },
   "graphPage": {
     "title": "Relationship graph",
@@ -277,5 +288,141 @@
     "candidate": "Possible match - select to create a separate copy",
     "dependencies": "Select the referenced records or deselect the dependent records before confirming:",
     "progress": "{count} of {total} records committed or already restored."
+  },
+  "personProfile": {
+    "loading": "Loading person...",
+    "notFound": "Person not found",
+    "back": "Back to people",
+    "deleteConfirm": "Delete {name}? This cannot be undone.",
+    "nickname": "Goes by {name}",
+    "lastInteraction": "Last interaction {date}",
+    "about": "About",
+    "birthday": "Birthday",
+    "importantDates": "Important Dates",
+    "notes": "Notes",
+    "relationships": "Relationships",
+    "interactions": "Interactions",
+    "socialProfiles": "Social Profiles",
+    "groups": "Groups",
+    "empty": "Nothing here yet.",
+    "editTitle": "Edit person",
+    "editDescription": "Update what you keep close about {name}."
+  },
+  "interactions": {
+    "call": "Call",
+    "message": "Message",
+    "email": "Email",
+    "visit": "Visit",
+    "event": "Event",
+    "other": "Other",
+    "saveError": "Could not add this interaction.",
+    "deleteConfirm": "Delete this interaction?",
+    "delete": "Delete interaction",
+    "summary": "A quick note",
+    "kind": "Interaction type",
+    "date": "Interaction date"
+  },
+  "notes": {
+    "validationBody": "Note is required",
+    "deleteConfirm": "Delete this note?",
+    "togglePinned": "Toggle pinned",
+    "edit": "Edit note",
+    "delete": "Delete note",
+    "title": "Title",
+    "body": "Note",
+    "pin": "Pin note",
+    "add": "Add note"
+  },
+  "importantDates": {
+    "validationTitle": "Title is required",
+    "validationDate": "Date is required",
+    "invalidDate": "Use a valid date.",
+    "deleteConfirm": "Delete {name}?",
+    "edit": "Edit date",
+    "delete": "Delete date",
+    "title": "Title",
+    "date": "Date",
+    "kind": "Kind",
+    "birthday": "Birthday",
+    "anniversary": "Anniversary",
+    "holiday": "Holiday",
+    "custom": "Custom",
+    "includeYear": "Year is known",
+    "repeatsAnnually": "Repeats annually",
+    "reminder": "Reminder",
+    "none": "No reminder",
+    "sameDay": "Same day",
+    "dayBefore": "1 day before",
+    "weekBefore": "1 week before",
+    "twoWeeksBefore": "2 weeks before",
+    "monthBefore": "1 month before",
+    "notes": "Notes",
+    "add": "Add date"
+  },
+  "relationships": {
+    "validationPerson": "Choose a person",
+    "validationLabel": "Relationship is required",
+    "chooseOther": "Choose someone else.",
+    "deleteConfirm": "Delete this relationship?",
+    "unknown": "Unknown person",
+    "edit": "Edit relationship",
+    "delete": "Delete relationship",
+    "person": "Person",
+    "choose": "Choose someone",
+    "fromLabel": "{name} is their",
+    "toLabel": "They are this person's",
+    "placeholder": "Friend, parent, cousin...",
+    "optional": "Optional",
+    "notes": "Notes",
+    "add": "Add relationship"
+  },
+  "memoryDetail": {
+    "loading": "Loading memory...",
+    "notFound": "Memory not found",
+    "back": "Back to memories",
+    "deleteConfirm": "Delete “{name}”? This cannot be undone.",
+    "noPeople": "No people connected yet."
+  },
+  "login": {
+    "tagline": "Private, person-centred memory keeping.",
+    "title": "Remember the people and details that make life feel close.",
+    "description": "Sign in with Google to keep your people, memories, dates, and notes in your own private Keepl space.",
+    "continue": "Continue with Google",
+    "keepClose": "Keep people close",
+    "hint": "Keepl starts with a gentle home for names, dates, notes, memories, and the relationships around them.",
+    "error": "Could not sign in with Google. Please try again."
+  },
+  "offline": {
+    "title": "You are offline",
+    "description": "Keepl can still open its installed shell. Reconnect to refresh people, memories, dates, and reminders.",
+    "home": "Return home"
+  },
+  "searchResults": {
+    "nickname": "Nickname: {name}",
+    "untitledNote": "Untitled note",
+    "noteAbout": "Note about {name}",
+    "note": "Note",
+    "dateFor": "Date for {name}",
+    "importantDate": "Important date",
+    "interactionWith": "Interaction with {name}",
+    "interaction": "Interaction",
+    "group": "Group"
+  },
+  "relationshipInverses": {
+    "parent": "parent",
+    "child": "child",
+    "sibling": "sibling",
+    "spouse": "spouse",
+    "partner": "partner",
+    "friend": "friend",
+    "best friend": "best friend",
+    "cousin": "cousin",
+    "niece/nephew": "niece/nephew",
+    "aunt/uncle": "aunt/uncle",
+    "grandparent": "grandparent",
+    "grandchild": "grandchild",
+    "colleague": "colleague",
+    "mentee": "mentee",
+    "mentor": "mentor"
   }
 }

@@ -4,14 +4,18 @@ import {
   GoogleAuthProvider,
   linkWithPopup,
   reauthenticateWithPopup,
-  signInWithPopup,
   type User,
 } from "firebase/auth";
 
 import { auth } from "@/lib/firebase/client";
-import { googlePhotosPickerScope, saveGooglePhotosAccess } from "@/services/google/photos";
+import {
+  googlePhotosPickerScope,
+  saveGooglePhotosAccess,
+} from "@/services/google/photos";
 
 export async function connectGooglePhotos(user: User | null) {
+  if (!user || auth.currentUser?.uid !== user.uid)
+    throw new Error("permission-required");
   const provider = new GoogleAuthProvider();
   provider.addScope(googlePhotosPickerScope);
   provider.setCustomParameters({
@@ -23,7 +27,7 @@ export async function connectGooglePhotos(user: User | null) {
     ? user.providerData.some((profile) => profile.providerId === "google.com")
       ? await reauthenticateWithPopup(user, provider)
       : await linkWithPopup(user, provider)
-    : await signInWithPopup(auth, provider);
+    : await Promise.reject(new Error("permission-required"));
 
   const credential = GoogleAuthProvider.credentialFromResult(result);
 
@@ -31,6 +35,12 @@ export async function connectGooglePhotos(user: User | null) {
     throw new Error("Google Photos did not return an access token.");
   }
 
-  saveGooglePhotosAccess({ accessToken: credential.accessToken });
+  if (auth.currentUser?.uid !== user.uid)
+    throw new Error("permission-required");
+  saveGooglePhotosAccess({
+    accessToken: credential.accessToken,
+    ownerId: user.uid,
+    expiresAt: Date.now() + 50 * 60 * 1000,
+  });
   return credential.accessToken;
 }

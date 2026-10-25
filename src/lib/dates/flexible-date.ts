@@ -8,8 +8,13 @@ import {
   startOfDay,
 } from "date-fns";
 
+import { createTranslator } from "@/lib/i18n/translate";
 import { defaultLocale } from "@/lib/i18n/config";
-import { formatDate, formatMonthDay, formatRelativeTime } from "@/lib/i18n/format";
+import {
+  formatDate,
+  formatMonthDay,
+  formatRelativeTime,
+} from "@/lib/i18n/format";
 import type { FlexibleDate, ImportantDate, Person } from "@/types";
 import type { Locale } from "@/types/i18n";
 
@@ -23,14 +28,19 @@ export type UpcomingDate = {
 
 export type UpcomingDateGroup = "today" | "this-week" | "this-month" | "later";
 
-export function flexibleDateFromInput(value: string, includeYear: boolean): FlexibleDate | undefined {
+export function flexibleDateFromInput(
+  value: string,
+  includeYear: boolean,
+): FlexibleDate | undefined {
   if (!value) {
     return undefined;
   }
 
   if (includeYear) {
     const [year, month, day] = value.split("-").map(Number);
-    return year && month && day ? { year, month, day, precision: "full" } : undefined;
+    return year && month && day
+      ? { year, month, day, precision: "full" }
+      : undefined;
   }
 
   const [, month, day] = value.split("-").map(Number);
@@ -46,13 +56,18 @@ export function flexibleDateInputValue(date?: FlexibleDate) {
   return `${year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 
-export function formatFlexibleDate(date?: FlexibleDate, locale: Locale = defaultLocale) {
+export function formatFlexibleDate(
+  date?: FlexibleDate,
+  locale: Locale = defaultLocale,
+) {
   if (!date?.month || !date.day) {
-    return "Date not set";
+    return createTranslator(locale)("dates", "dateNotSet");
   }
 
   const occurrence = new Date(date.year ?? 2000, date.month - 1, date.day);
-  return date.year ? formatDate(occurrence, locale, { dateStyle: "long" }) : formatMonthDay(occurrence, locale);
+  return date.year
+    ? formatDate(occurrence, locale, { dateStyle: "long" })
+    : formatMonthDay(occurrence, locale);
 }
 
 export function getNextAnnualOccurrence(date: FlexibleDate, from = new Date()) {
@@ -61,7 +76,10 @@ export function getNextAnnualOccurrence(date: FlexibleDate, from = new Date()) {
   }
 
   const today = startOfDay(from);
-  const baseYear = date.year && date.year > today.getFullYear() ? date.year : today.getFullYear();
+  const baseYear =
+    date.year && date.year > today.getFullYear()
+      ? date.year
+      : today.getFullYear();
   let occurrence = new Date(baseYear, date.month - 1, date.day);
 
   if (isBefore(occurrence, today)) {
@@ -71,7 +89,11 @@ export function getNextAnnualOccurrence(date: FlexibleDate, from = new Date()) {
   return startOfDay(occurrence);
 }
 
-export function buildUpcomingDates(importantDates: ImportantDate[], people: Person[], from = new Date()) {
+export function buildUpcomingDates(
+  importantDates: ImportantDate[],
+  people: Person[],
+  from = new Date(),
+) {
   const today = startOfDay(from);
   const peopleById = new Map(people.map((person) => [person.id, person]));
 
@@ -99,7 +121,10 @@ export function buildUpcomingDates(importantDates: ImportantDate[], people: Pers
     .sort((a, b) => a.nextOccurrence.getTime() - b.nextOccurrence.getTime());
 }
 
-export function formatRelativeDateLabel(daysUntil: number, locale: Locale = defaultLocale) {
+export function formatRelativeDateLabel(
+  daysUntil: number,
+  locale: Locale = defaultLocale,
+) {
   return titleCase(formatRelativeTime(daysUntil, locale));
 }
 

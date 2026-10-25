@@ -9,6 +9,7 @@ type PageHeaderKey =
   | "newPerson"
   | "memories"
   | "newMemory"
+  | "editMemory"
   | "graph"
   | "exportImport"
   | "search"

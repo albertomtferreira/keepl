@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import type { Timestamp } from "firebase/firestore";
 
+import { createTranslator } from "@/lib/i18n/translate";
 import { defaultLocale } from "@/lib/i18n/config";
 import { formatDate } from "@/lib/i18n/format";
 import type { Memory, Person } from "@/types";
@@ -14,12 +15,15 @@ export function timestampToDate(value: Timestamp | Date | undefined) {
   return "toDate" in value ? value.toDate() : value;
 }
 
-export function formatMemoryDate(memory: Memory, locale: Locale = defaultLocale) {
+export function formatMemoryDate(
+  memory: Memory,
+  locale: Locale = defaultLocale,
+) {
   const startDate = timestampToDate(memory.startDate);
   const endDate = timestampToDate(memory.endDate);
 
   if (!startDate) {
-    return "No date";
+    return createTranslator(locale)("dates", "noDate");
   }
 
   if (endDate) {
@@ -30,9 +34,13 @@ export function formatMemoryDate(memory: Memory, locale: Locale = defaultLocale)
 }
 
 export function memoryPeopleNames(memory: Memory, people: Person[]) {
-  const peopleById = new Map(people.map((person) => [person.id, person.displayName]));
+  const peopleById = new Map(
+    people.map((person) => [person.id, person.displayName]),
+  );
 
-  return memory.peopleIds.map((id) => peopleById.get(id)).filter(Boolean) as string[];
+  return memory.peopleIds
+    .map((id) => peopleById.get(id))
+    .filter(Boolean) as string[];
 }
 
 export function dateInputValue(value: Timestamp | Date | undefined) {

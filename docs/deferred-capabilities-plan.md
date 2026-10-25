@@ -2,7 +2,7 @@
 
 This is the main source of truth for current status, priorities, release gates, and future work. The filename is retained so existing links keep working. The [original implementation plan](./implementation-plan.md) records the historical MVP milestones; it does not define the next work.
 
-Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1 implementation decisions and local verification evidence are recorded in its stage section.
+Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3 implementation decisions and local verification evidence are recorded in their stage sections.
 
 ## Status and Evidence
 
@@ -14,13 +14,13 @@ Use these statuses consistently:
 - **Verified:** acceptance criteria passed, with dated evidence recorded here.
 - **Blocked:** record the dependency and what will unblock it.
 
-The local assessment passed lint, TypeScript, 33 tests, and the production build. Authenticated browser flows, deployed Firestore rules/indexes, provider permissions, and physical-device PWA behavior remain unverified. No checked-in CI workflow, browser test suite, or Firestore emulator security suite was found.
+The local assessment passed lint, TypeScript, 33 tests, and the production build. H3 authenticated localization checks are recorded below; complete write flows, deployed Firestore rules/indexes, provider permissions, and physical-device PWA behavior remain H5/H6 verification gates. No checked-in CI workflow, browser test suite, or Firestore emulator security suite was found.
 
 | Area                                                                                               | Current status                                                             | Remaining gate                       |
 | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
 | Core MVP: people, groups, relationships, notes, dates, memories, interactions, dashboard, settings | Implemented                                                                | Stages H4-H6                         |
 | Text search (FT 1)                                                                                 | Implemented; local matching and ranking, without AI language understanding | Stage H5                             |
-| Four-language support (FT 2)                                                                       | Hardening required; infrastructure exists, English strings remain          | Stage H3                             |
+| Four-language support (FT 2)                                                                       | Verified locally for H3; release verification remains          | Stage H6                             |
 | Relationship graph (FT 12)                                                                         | Implemented                                                                | Stage H6 device/accessibility checks |
 | Export/import (FT 14)                                                                              | Implemented; H1 local checks passed                                        | H5/H6 deployed verification           |
 | Google Photos (FT 9)                                                                               | Hardening required; picker, viewing, and download code exists              | Stages H2 and H6                     |
@@ -34,8 +34,8 @@ Complete H1-H6 before starting new provider or AI delivery work. H1 and H2 are t
 | Stage | Scope                                                      | Status  | Dependency                           |
 | ----- | ---------------------------------------------------------- | ------- | ------------------------------------ |
 | H1    | Import validation, references, recovery                    | Implemented | Local checks below; deployed checks in H5/H6                       |
-| H2    | Google Photos credentials and account isolation            | Planned | Before new provider integrations     |
-| H3    | Complete localization                                      | Planned | Before broader beta                  |
+| H2    | Google Photos credentials and account isolation            | Implemented | Before new provider integrations     |
+| H3    | Complete localization                                      | Verified locally (2026-10-25) | Before broader beta                  |
 | H4    | Data lifecycle and honest failure states                   | Planned | Coordinate reference policy with H1  |
 | H5    | Automated checks, rules/index configuration, bounded reads | Planned | Cover H1-H4 fixes                    |
 | H6    | End-to-end beta and release verification                   | Planned | H1-H5                                |
@@ -73,24 +73,48 @@ H1 implementation decisions (2026-10-25, owner: Codex):
 
 Problem: [Photos service requests](../src/services/google/photos/index.ts) include access tokens in query strings and use a session-wide storage key. Account changes and credential lifetime need explicit handling.
 
-- [ ] H2.1 Move tokens from request URLs into authorization headers across picker session polling, media listing, and proxy routes. Ensure errors and logs never echo credentials.
-- [ ] H2.2 Scope credential state to the authenticated account. Clear tokens and account-specific media/object URLs on sign-out, account switch, disconnect, expiry, and authorization failure.
-- [ ] H2.3 Review API authentication, provider host/redirect restrictions, input validation, caching, and error mapping. Distinguish local disconnect from provider revocation and make Settings behavior accurate.
+- [x] H2.1 Move tokens from request URLs into authorization headers across picker session polling, media listing, and proxy routes. Ensure errors and logs never echo credentials.
+- [x] H2.2 Scope credential state to the authenticated account. Clear tokens and account-specific media/object URLs on sign-out, account switch, disconnect, expiry, and authorization failure.
+- [x] H2.3 Review API authentication, provider host/redirect restrictions, input validation, caching, and error mapping. Distinguish local disconnect from provider revocation and make Settings behavior accurate.
 - [ ] H2.4 Define expired media/reselection behavior and reconnect UX. Verify consent denial, popup blocking/cancellation, token expiry, two-account switching, and unavailable references.
 - [ ] H2.5 Add targeted service/route tests and verify a real Google Photos selection, save, reopen, view, download, and disconnect flow during H6.
 
 Exit gate: tokens never appear in request URLs or exported data; one Keepl account cannot reuse another account's retained Photos state; expired credentials produce a recoverable localized state. Record provider verification separately from unit tests.
 
+H2 implementation decisions (2026-10-25, owner: Codex):
+
+- Credential transport: all picker creation, polling, media listing, deletion, and binary proxy requests use the Authorization bearer header. Query credentials are rejected. Provider error bodies/exceptions are replaced by fixed status codes; UI errors are localized. Routes are stateless Google capability proxies, authenticated by the caller-supplied Google bearer, with no access to Keepl records and no stored server credentials. Same-origin browser requests are enforced when Origin is supplied; no CORS access is granted.
+- Credential lifetime/account isolation: credentials live only in memory, bound to the active Firebase UID, with a conservative 50-minute lifetime and no refresh token. Reloading requires reconnecting. Sign-out, account changes, local disconnect, expiry, and 401/403 clear access and revoke tracked object URLs. Legacy session-storage tokens are removed and never read. Pending media/picker responses and late consent results are rejected after an account/credential change; old failures cannot clear a newer account's credentials. Firebase reauthentication/linking requires the current authenticated user.
+- Proxy restrictions: fixed Picker API origin, validated session IDs/page sizes/page tokens, HTTPS Googleusercontent media hosts without credentials, ports, query strings, or fragments, and redirects rejected. Binary responses require image/video content types. All proxy fetches/responses disable caching; the service worker explicitly uses NetworkOnly for Photos routes before its default rules.
+- Recovery: popup is reserved during the user gesture; blocked popups, cancellation, timeout, consent failure, expired access, unavailable media, and download failures show localized recovery guidance. Reconnect restores credentials only; expiring provider media URLs require editing the memory, reselecting the photo, and saving. Reselection replaces the previous reference for the same provider/media ID. Saved references remain intact on local disconnect; revoking provider permission is a separate action in Google Account settings. Portable schema is unchanged; credentials remain excluded by the H1 allowlist.
+- Local evidence (2026-10-25): `npm run lint`, `npm run typecheck`, `npm test` (47 tests passed), and `npm run build` passed.
+- Automated evidence: targeted tests cover account isolation, late consent rejection, time expiry, denied requests, in-flight account transitions, object URL revocation, malformed input, host/origin/path validation, header-only picker creation/polling/listing/deletion, popup blocking, no-store/redirect policy, error redaction, and stale-reference replacement. Full local check results are recorded below.
+- H2.4/H2.5 remain open only for real-provider verification in H6: consent denial; popup blocking/cancellation and automatic closure; token expiry; two Keepl accounts; Google authorization revocation; expired/unavailable media; and real selection, memory save, reopen, view, download, local disconnect, reconnect/reselection. Unit tests and local builds do not establish Google consent configuration, provider behavior, deployed service-worker replacement, or authenticated browser outcomes.
+
 ### H3: Localization Completion
 
 Problem: [interactions](../src/features/interactions/interaction-manager.tsx), [person profiles](../src/features/people/person-profile-client.tsx), and other screens retain English UI text despite four-language infrastructure.
 
-- [ ] H3.1 Audit all routes and feature components, including confirmations, loading/empty/error states, placeholders, aria labels, provider errors, relationship labels, and birthday/relative-date labels.
-- [ ] H3.2 Replace remaining UI strings with feature-namespaced keys in en, pt, fr, and es. Use translated schema factories and locale-aware date helpers. Preserve user-authored names, labels, notes, and descriptions.
-- [ ] H3.3 Add message-key/interpolation parity checks and focused locale persistence, fallback, formatting, and validation checks. Keep coverage aligned with the current client-side locale strategy.
-- [ ] H3.4 Verify critical flows in all four languages, including layout at mobile widths and language switching without changing stored user data.
+- [x] H3.1 Audit all routes and feature components, including confirmations, loading/empty/error states, placeholders, aria labels, provider errors, relationship labels, and birthday/relative-date labels.
+- [x] H3.2 Replace remaining UI strings with feature-namespaced keys in en, pt, fr, and es. Use translated schema factories and locale-aware date helpers. Preserve user-authored names, labels, notes, and descriptions.
+- [x] H3.3 Add message-key/interpolation parity checks and focused locale persistence, fallback, formatting, and validation checks. Keep coverage aligned with the current client-side locale strategy.
+- [x] H3.4 Verify critical flows in all four languages, including layout at mobile widths and language switching without changing stored user data.
 
 Exit gate: audited core flows have localized UI and accessible labels in all supported languages; lint, typecheck, tests, and build pass. Close the remaining FT 2 tasks only with evidence.
+
+H3 implementation decisions and evidence (2026-10-25, owner: Codex):
+
+- Coverage audit: all App Router pages, app shell/auth gate, and feature components were scanned for visible text, literal labels/placeholders, confirmations, error messages, and date formatting. Completed profile/detail/edit/loading screens, interactions, notes, important dates/recurrence/reminder presets, relationship editor, login, and offline UI in en/pt/fr/es. Existing localized navigation, lists, Home, Upcoming, graph, Settings, Photos, and import/export were checked. Generated birthday labels, search subtitles/default titles, missing-date labels, and last-interaction relative times now follow the active locale. Raw person/memory/interaction service error messages are replaced at the UI boundary.
+- Ownership boundary: saved names, group names, relationship labels/explicit inverses, notes, descriptions, and titles remain verbatim. Only automatically inferred inverse relationship labels are localized for display; form values retain the existing data semantics. New date reminders use the authored date title without persisting an English instruction prefix. No portable fields or schema changes, record migrations, or locale-triggered domain writes were introduced.
+- Client strategy: no locale routing or server locale migration. Static route metadata and the PWA manifest remain English deliberately; runtime offline content uses a client component within a server page. Browser/device locale restoration hydrates safely, tolerates unavailable local storage, and does not initially overwrite a saved preference with the server default. Profile locale loads are cancelled/invalidated when the account or explicit language choice changes. Choosing a language updates only the locale preference; failed profile persistence keeps the device preference. Submitted validation refreshes on language change without resetting form values.
+- Automated coverage: exact namespace/key and interpolation parity, nonempty/validly encoded messages, English fallback, single-pass interpolation preserving user text, normalization/device persistence/storage denial, locale-aware formatting/birthday/relative labels, search chrome, localized person/memory/note/date/relationship validation, and preservation of authored note/relationship values across all four locales. Tests exercise pure helpers and schemas; mounted authenticated provider/form behavior remains part of H3.4/H5/H6.
+- Local evidence: `npm run lint`, `npm run typecheck`, `npm test` (61 tests passed, including 14 added H3 tests), and `npm run build` passed. Browser smoke checks on the existing local dev server covered `/login` and `/offline` in en/pt/fr/es at 375 x 812: correct document language, translated headings/readable accents, preference restoration on navigation/reload, and no horizontal page overflow.
+- H3.4 authenticated local evidence (2026-10-25): after the user signed in, verified en/pt/fr/es at a 375 x 812 browser viewport. Each locale passed 13 screen checks: Home, People, new person, populated person profile, edit person, Memories, new memory, populated memory detail, edit memory, Graph, Search, Upcoming, and Export/import. Expected translated page headings and document language matched; no horizontal document overflow was found, including date/relationship validation forms, import preview, and the photo viewer. Settings language selection saved successfully in every locale; clearing the device preference and reloading restored the authenticated profile preference.
+- H3.4 interactions: submitted deliberately invalid person, memory, note, date, and relationship forms in each locale and checked translated validation. Person nickname and memory description drafts remained verbatim after validation. Opened and dismissed note, date, relationship, interaction, person archive/delete, and memory delete confirmations; all matched the active translations and interpolated the authored names/titles correctly. Verified populated and no-match search, valid backup preview with duplicate candidates, and malformed-import errors without confirming an import. Verified Photos recovery text, viewer accessible name/navigation/count, close action, and the localized failed-download error while Photos access was disconnected. Birthday date formatting, generated birthday labels, last-interaction labels/kinds, and preservation of authored notes/relationship labels passed in all four locales.
+- H3.4 data invariant: compared canonical SHA-256 checksums of all eight portable collections before and after the locale/interaction checks. Both were `a5cddd3c739ba3fda7b530fc810139600257f629a6373df78b12239a336c2101`. The 18 records (4 people, 2 groups, 3 relationships, 2 important dates, 1 note, 2 memories, 2 interactions, 2 reminders), including timestamps, were unchanged. Only the language preference was intentionally saved; English was restored afterward. Temporary browser verification storage was removed.
+- Evidence limits: these are non-destructive localization checks in the existing local dev session, not deployed beta verification. No valid domain create/update/delete or import was committed, and no Google consent/reconnect/successful media download was exercised; retain those H2/H5/H6 gates. Draft preservation was checked through validation, not live in-form language switching: the language selector is on Settings, so this pass does not establish draft persistence across route changes or cross-tab synchronization. No new code or automated tests were added during this verification; the passing H3 lint/typecheck/61-test/build results above remain the implementation evidence.
+- Non-blocking language polish observed: older export/import translations omit some accents (for example French `Telecharger` and Portuguese `copia`/`portatil`). These did not prevent the tested flows; a native-language copy review can refine them before release.
+
 
 ### H4: Data Lifecycle and Failure States
 
@@ -307,7 +331,7 @@ Acceptance criteria:
 
 ## Feature Track 2: Multi-Language Support
 
-Status: Hardening required (H3)
+Status: Verified locally (H3, 2026-10-25); deployed release verification in H6
 
 Goal:
 
@@ -319,9 +343,9 @@ Phases:
 - [x] Phase 2: Define supported locales: `en`, `pt`, `fr`, and `es`.
 - [x] Phase 3: Add translation message files and a typed translation access pattern.
 - [x] Phase 4: Add locale detection, persistence, and a language selector in Settings.
-- [ ] Phase 5: Complete translation coverage across app shell, navigation, forms, validation, empty states, and errors (remaining audit in H3).
-- [ ] Phase 6: Finish the date, time, recurrence, and relative-label audit using the existing locale-aware helpers (H3).
-- [ ] Phase 7: Verify existing fallback behavior and add locale persistence, formatting, and critical-form coverage (H3); no locale-routing migration is planned.
+- [x] Phase 5: Complete translation coverage across app shell, navigation, forms, validation, empty states, and errors (H3 local implementation and authenticated H3.4 verification).
+- [x] Phase 6: Finish the date, time, recurrence, and relative-label audit using the existing locale-aware helpers (H3).
+- [x] Phase 7: Verify existing fallback behavior and add locale persistence, formatting, and critical-form coverage (H3/H3.4 local evidence above); no locale-routing migration is planned.
 
 Possible files:
 

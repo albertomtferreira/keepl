@@ -1,9 +1,16 @@
 "use client";
 
 import { Image as PhotoIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { fetchGooglePhotoObjectUrl } from "@/services/google/photos";
+import { useI18n } from "@/lib/i18n/i18n-context";
+import {
+  fetchGooglePhotoObjectUrl,
+  subscribeGooglePhotos,
+  getGooglePhotosSnapshot,
+  hasGooglePhotosAccessToken,
+  releaseGooglePhotoObjectUrl,
+} from "@/services/google/photos";
 
 export function GooglePhotoThumbnail({
   alt,
@@ -14,11 +21,18 @@ export function GooglePhotoThumbnail({
   className?: string;
   mediaUrl?: string;
 }) {
+  const { t } = useI18n();
+  const revision = useSyncExternalStore(
+    subscribeGooglePhotos,
+    getGooglePhotosSnapshot,
+    () => 0,
+  );
+  const connected = hasGooglePhotosAccessToken();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!mediaUrl) {
+    if (!mediaUrl || !connected) {
       return;
     }
 
@@ -33,7 +47,7 @@ export function GooglePhotoThumbnail({
           setObjectUrl(url);
           setFailed(false);
         } else {
-          URL.revokeObjectURL(url);
+          releaseGooglePhotoObjectUrl(url);
         }
       })
       .catch(() => {
@@ -46,12 +60,12 @@ export function GooglePhotoThumbnail({
       active = false;
 
       if (nextObjectUrl) {
-        URL.revokeObjectURL(nextObjectUrl);
+        releaseGooglePhotoObjectUrl(nextObjectUrl);
       }
     };
-  }, [mediaUrl]);
+  }, [mediaUrl, connected, revision]);
 
-  if (objectUrl && !failed && mediaUrl) {
+  if (connected && objectUrl && !failed && mediaUrl) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={objectUrl} alt={alt} className={className} />;
   }
@@ -59,6 +73,7 @@ export function GooglePhotoThumbnail({
   return (
     <div className="flex aspect-video items-center justify-center bg-muted text-muted-foreground">
       <PhotoIcon className="size-6" aria-hidden="true" />
+      <span className="p-2 text-xs">{t("memoryForm", "photosRecovery")}</span>
     </div>
   );
 }

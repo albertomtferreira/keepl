@@ -73,7 +73,10 @@ describe("Google Photos references", () => {
 
     assert.equal(reference.source, "google-photos");
     assert.equal(reference.externalId, "picked-1");
-    assert.equal(reference.thumbnailUrl, "https://photos.example/base=w640-h480");
+    assert.equal(
+      reference.thumbnailUrl,
+      "https://photos.example/base=w640-h480",
+    );
     assert.equal(reference.url, "https://photos.example/base");
     assert.equal(reference.description, "memory.jpg");
     assert.equal(reference.providerStatus, "available");

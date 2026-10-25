@@ -1,3 +1,4 @@
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   buildUpcomingDates,
   formatFlexibleDate,
@@ -16,16 +17,23 @@ export type UpcomingItem = {
   group: UpcomingDateGroup;
 };
 
-export function buildUpcomingItems(importantDates: ImportantDate[], people: Person[], from: Date, locale?: Locale): UpcomingItem[] {
-  const dateItems = buildUpcomingDates(importantDates, people, from).map((date) => ({
-    id: date.importantDate.id,
-    title: date.importantDate.title,
-    dateLabel: formatFlexibleDate(date.importantDate.date, locale),
-    person: date.person,
-    daysUntil: date.daysUntil,
-    group: date.group,
-    nextOccurrence: date.nextOccurrence,
-  }));
+export function buildUpcomingItems(
+  importantDates: ImportantDate[],
+  people: Person[],
+  from: Date,
+  locale?: Locale,
+): UpcomingItem[] {
+  const dateItems = buildUpcomingDates(importantDates, people, from).map(
+    (date) => ({
+      id: date.importantDate.id,
+      title: date.importantDate.title,
+      dateLabel: formatFlexibleDate(date.importantDate.date, locale),
+      person: date.person,
+      daysUntil: date.daysUntil,
+      group: date.group,
+      nextOccurrence: date.nextOccurrence,
+    }),
+  );
 
   const birthdayItems = people.flatMap((person) => {
     if (!person.birthday) {
@@ -38,12 +46,15 @@ export function buildUpcomingItems(importantDates: ImportantDate[], people: Pers
       return [];
     }
 
-    const daysUntil = Math.max(0, Math.ceil((nextOccurrence.getTime() - from.getTime()) / 86400000));
+    const daysUntil = Math.max(
+      0,
+      Math.ceil((nextOccurrence.getTime() - from.getTime()) / 86400000),
+    );
 
     return [
       {
         id: `person-birthday-${person.id}`,
-        title: "Birthday",
+        title: createTranslator(locale ?? "en")("personProfile", "birthday"),
         dateLabel: formatFlexibleDate(person.birthday, locale),
         person,
         daysUntil,
@@ -54,7 +65,10 @@ export function buildUpcomingItems(importantDates: ImportantDate[], people: Pers
   });
 
   return [...dateItems, ...birthdayItems]
-    .sort((first, second) => first.nextOccurrence.getTime() - second.nextOccurrence.getTime())
+    .sort(
+      (first, second) =>
+        first.nextOccurrence.getTime() - second.nextOccurrence.getTime(),
+    )
     .map((item) => ({
       id: item.id,
       title: item.title,

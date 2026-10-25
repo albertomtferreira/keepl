@@ -1,7 +1,8 @@
 {
   "app": {
     "settings": "Definições",
-    "signOut": "Terminar sessão"
+    "signOut": "Terminar sessão",
+    "opening": "A abrir o Keepl"
   },
   "nav": {
     "home": "Início",
@@ -21,7 +22,13 @@
     "notConnected": "Não ligado",
     "permissionRequired": "Permissão necessária",
     "connected": "Ligado",
-    "close": "Fechar"
+    "close": "Fechar",
+    "add": "Adicionar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "signInSave": "Inicie sessão novamente antes de guardar."
   },
   "dates": {
     "dateNotSet": "Data não definida",
@@ -50,7 +57,9 @@
     "graphTitle": "Grafo de relações",
     "graphDescription": "Veja como as suas pessoas se ligam, usando apenas relações que já guardou.",
     "exportImportTitle": "Exportar e importar",
-    "exportImportDescription": "Transfere uma copia JSON portatil ou revê um ficheiro Keepl antes de importar registos selecionados."
+    "exportImportDescription": "Transfere uma copia JSON portatil ou revê um ficheiro Keepl antes de importar registos selecionados.",
+    "editMemoryTitle": "Editar memória",
+    "editMemoryDescription": "Ajuste os detalhes mantendo a ligação às pessoas."
   },
   "home": {
     "people": "Pessoas",
@@ -141,7 +150,8 @@
     "saveError": "Não foi possível guardar esta memória.",
     "validationTitle": "O título é obrigatório",
     "validationStartDate": "A data de início é obrigatória",
-    "validationEndDate": "A data de fim deve ser posterior à data de início"
+    "validationEndDate": "A data de fim deve ser posterior à data de início",
+    "photosRecovery": "Volte a ligar o Google Photos se o acesso expirar. Se uma foto estiver indisponível, edite a memória, selecione-a novamente e guarde para atualizar a referência. Pode cancelar e tentar novamente; permita janelas pop-up se forem bloqueadas."
   },
   "searchPage": {
     "scopeAll": "Tudo",
@@ -228,7 +238,8 @@
     "notificationPermission": "Permissão do navegador ainda não pedida",
     "notificationPermissionDetail": "As notificações de lembretes só pedirão permissão quando esses recursos forem ativados.",
     "progressivePermissions": "Permissões progressivas",
-    "progressivePermissionsDetail": "Neste momento, o Keepl usa apenas o início de sessão Google. Contactos, Fotografias, Calendário e notificações ficam atrás dos seus próprios passos futuros de ligação."
+    "progressivePermissionsDetail": "Neste momento, o Keepl usa apenas o início de sessão Google. Contactos, Fotografias, Calendário e notificações ficam atrás dos seus próprios passos futuros de ligação.",
+    "photosLocalDisconnect": "Desligar limpa o acesso ao Photos nesta sessão do Keepl. Não revoga a permissão Google nem elimina referências guardadas. Para revogar a permissão, use as definições da sua Conta Google. Volte a ligar após recarregar o Keepl."
   },
   "graphPage": {
     "title": "Grafo de relações",
@@ -277,5 +288,141 @@
     "candidate": "Possível correspondência — selecione para criar uma cópia separada",
     "dependencies": "Selecione os registos referenciados ou desmarque os dependentes antes de confirmar:",
     "progress": "{count} de {total} registos gravados ou já restaurados."
+  },
+  "personProfile": {
+    "loading": "A carregar pessoa...",
+    "notFound": "Pessoa não encontrada",
+    "back": "Voltar às pessoas",
+    "deleteConfirm": "Eliminar {name}? Esta ação é irreversível.",
+    "nickname": "Conhecido por {name}",
+    "lastInteraction": "Última interação {date}",
+    "about": "Sobre",
+    "birthday": "Aniversário",
+    "importantDates": "Datas importantes",
+    "notes": "Notas",
+    "relationships": "Relações",
+    "interactions": "Interações",
+    "socialProfiles": "Perfis sociais",
+    "groups": "Grupos",
+    "empty": "Ainda não há nada aqui.",
+    "editTitle": "Editar pessoa",
+    "editDescription": "Atualize os detalhes que guarda sobre {name}."
+  },
+  "interactions": {
+    "call": "Chamada",
+    "message": "Mensagem",
+    "email": "Email",
+    "visit": "Visita",
+    "event": "Evento",
+    "other": "Outro",
+    "saveError": "Não foi possível adicionar esta interação.",
+    "deleteConfirm": "Eliminar esta interação?",
+    "delete": "Eliminar interação",
+    "summary": "Uma nota rápida",
+    "kind": "Tipo de interação",
+    "date": "Data da interação"
+  },
+  "notes": {
+    "validationBody": "A nota é obrigatória",
+    "deleteConfirm": "Eliminar esta nota?",
+    "togglePinned": "Alternar destaque",
+    "edit": "Editar nota",
+    "delete": "Eliminar nota",
+    "title": "Título",
+    "body": "Nota",
+    "pin": "Destacar nota",
+    "add": "Adicionar nota"
+  },
+  "importantDates": {
+    "validationTitle": "O título é obrigatório",
+    "validationDate": "A data é obrigatória",
+    "invalidDate": "Use uma data válida.",
+    "deleteConfirm": "Eliminar {name}?",
+    "edit": "Editar data",
+    "delete": "Eliminar data",
+    "title": "Título",
+    "date": "Data",
+    "kind": "Tipo",
+    "birthday": "Aniversário",
+    "anniversary": "Data comemorativa",
+    "holiday": "Feriado",
+    "custom": "Personalizado",
+    "includeYear": "O ano é conhecido",
+    "repeatsAnnually": "Repete anualmente",
+    "reminder": "Lembrete",
+    "none": "Sem lembrete",
+    "sameDay": "No próprio dia",
+    "dayBefore": "1 dia antes",
+    "weekBefore": "1 semana antes",
+    "twoWeeksBefore": "2 semanas antes",
+    "monthBefore": "1 mês antes",
+    "notes": "Notas",
+    "add": "Adicionar data"
+  },
+  "relationships": {
+    "validationPerson": "Escolha uma pessoa",
+    "validationLabel": "A relação é obrigatória",
+    "chooseOther": "Escolha outra pessoa.",
+    "deleteConfirm": "Eliminar esta relação?",
+    "unknown": "Pessoa desconhecida",
+    "edit": "Editar relação",
+    "delete": "Eliminar relação",
+    "person": "Pessoa",
+    "choose": "Escolha alguém",
+    "fromLabel": "{name} é o seu / a sua",
+    "toLabel": "Esta pessoa é o seu / a sua",
+    "placeholder": "Amigo, pai, primo...",
+    "optional": "Opcional",
+    "notes": "Notas",
+    "add": "Adicionar relação"
+  },
+  "memoryDetail": {
+    "loading": "A carregar memória...",
+    "notFound": "Memória não encontrada",
+    "back": "Voltar às memórias",
+    "deleteConfirm": "Eliminar «{name}»? Esta ação é irreversível.",
+    "noPeople": "Ainda não há pessoas associadas."
+  },
+  "login": {
+    "tagline": "Memórias privadas centradas nas pessoas.",
+    "title": "Lembre-se das pessoas e dos detalhes que tornam a vida próxima.",
+    "description": "Inicie sessão com o Google para guardar pessoas, memórias, datas e notas no seu espaço privado Keepl.",
+    "continue": "Continuar com Google",
+    "keepClose": "Mantenha as pessoas próximas",
+    "hint": "O Keepl oferece um lugar tranquilo para nomes, datas, notas, memórias e relações.",
+    "error": "Não foi possível iniciar sessão com o Google. Tente novamente."
+  },
+  "offline": {
+    "title": "Está offline",
+    "description": "O Keepl pode abrir a aplicação instalada. Volte a ligar-se para atualizar pessoas, memórias, datas e lembretes.",
+    "home": "Voltar ao início"
+  },
+  "searchResults": {
+    "nickname": "Alcunha: {name}",
+    "untitledNote": "Nota sem título",
+    "noteAbout": "Nota sobre {name}",
+    "note": "Nota",
+    "dateFor": "Data de {name}",
+    "importantDate": "Data importante",
+    "interactionWith": "Interação com {name}",
+    "interaction": "Interação",
+    "group": "Grupo"
+  },
+  "relationshipInverses": {
+    "parent": "progenitor",
+    "child": "filho/filha",
+    "sibling": "irmão/irmã",
+    "spouse": "cônjuge",
+    "partner": "companheiro/companheira",
+    "friend": "amigo/amiga",
+    "best friend": "melhor amigo/amiga",
+    "cousin": "primo/prima",
+    "niece/nephew": "sobrinha/sobrinho",
+    "aunt/uncle": "tia/tio",
+    "grandparent": "avô/avó",
+    "grandchild": "neto/neta",
+    "colleague": "colega",
+    "mentee": "mentorado/mentorada",
+    "mentor": "mentor/mentora"
   }
 }

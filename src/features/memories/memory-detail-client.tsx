@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, Edit, Expand, Image as PhotoIcon, MapPin, Trash2, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Edit,
+  Expand,
+  Image as PhotoIcon,
+  MapPin,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -47,7 +56,11 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   }, [memoryId, user]);
 
   async function deleteMemory() {
-    if (!user || !memory || !confirm(`Delete "${memory.title}"? This cannot be undone.`)) {
+    if (
+      !user ||
+      !memory ||
+      !confirm(t("memoryDetail", "deleteConfirm", { name: memory.title }))
+    ) {
       return;
     }
 
@@ -56,15 +69,19 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
   }
 
   if (loading) {
-    return <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">Loading memory...</div>;
+    return (
+      <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+        {t("memoryDetail", "loading")}
+      </div>
+    );
   }
 
   if (!memory) {
     return (
       <div className="rounded-lg border bg-white p-6">
-        <h1 className="font-semibold">Memory not found</h1>
+        <h1 className="font-semibold">{t("memoryDetail", "notFound")}</h1>
         <Button asChild className="mt-4" variant="outline">
-          <Link href="/memories">Back to memories</Link>
+          <Link href="/memories">{t("memoryDetail", "back")}</Link>
         </Button>
       </div>
     );
@@ -77,7 +94,7 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
       <Button asChild variant="ghost" size="sm">
         <Link href="/memories">
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Memories
+          {t("nav", "memories")}
         </Link>
       </Button>
 
@@ -102,46 +119,62 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
             <Button asChild variant="outline">
               <Link href={`/memories/${memory.id}/edit`}>
                 <Edit className="size-4" aria-hidden="true" />
-                Edit
+                {t("common", "edit")}
               </Link>
             </Button>
             <Button type="button" variant="destructive" onClick={deleteMemory}>
               <Trash2 className="size-4" aria-hidden="true" />
-              Delete
+              {t("common", "delete")}
             </Button>
           </div>
         </div>
       </section>
 
-      {memory.description ? <section className="rounded-lg border bg-white p-4 text-sm leading-6 shadow-sm">{memory.description}</section> : null}
+      {memory.description ? (
+        <section className="rounded-lg border bg-white p-4 text-sm leading-6 shadow-sm">
+          {memory.description}
+        </section>
+      ) : null}
 
       <section className="rounded-lg border bg-white p-4 shadow-sm">
         <h2 className="mb-3 flex items-center gap-2 font-semibold">
-          <UsersRound className="size-4 text-muted-foreground" aria-hidden="true" />
-          People
+          <UsersRound
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+          {t("memoryForm", "people")}
         </h2>
         {names.length ? (
           <div className="flex flex-wrap gap-2">
             {memory.peopleIds.map((personId) => {
               const person = people.find((item) => item.id === personId);
               return person ? (
-                <Link key={person.id} href={`/people/${person.id}`} className="rounded-full bg-secondary px-3 py-1 text-sm font-medium">
+                <Link
+                  key={person.id}
+                  href={`/people/${person.id}`}
+                  className="rounded-full bg-secondary px-3 py-1 text-sm font-medium"
+                >
                   {person.displayName}
                 </Link>
               ) : null;
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No people connected yet.</p>
+          <p className="text-sm text-muted-foreground">
+            {t("memoryDetail", "noPeople")}
+          </p>
         )}
       </section>
 
       {memory.tags?.length ? (
         <section className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-3 font-semibold">Tags</h2>
+          <h2 className="mb-3 font-semibold">{t("memoryForm", "tags")}</h2>
           <div className="flex flex-wrap gap-2">
             {memory.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-secondary px-3 py-1 text-sm font-medium">
+              <span
+                key={tag}
+                className="rounded-full bg-secondary px-3 py-1 text-sm font-medium"
+              >
                 {tag}
               </span>
             ))}
@@ -151,15 +184,24 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
 
       <section className="rounded-lg border border-dashed bg-white p-4">
         <h2 className="flex items-center gap-2 font-semibold">
-          <PhotoIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+          <PhotoIcon
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           {t("memoryForm", "photos")}
         </h2>
         {memory.photos?.length ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {memory.photos.map((photo, index) => (
-              <div key={`${photo.source}-${photo.externalId ?? index}`} className="overflow-hidden rounded-md border bg-white">
+              <div
+                key={`${photo.source}-${photo.externalId ?? index}`}
+                className="overflow-hidden rounded-md border bg-white"
+              >
                 <div className="relative">
-                  <GooglePhotoThumbnail alt={photo.description ?? t("memoryForm", "photoReference")} mediaUrl={photo.thumbnailUrl ?? photo.url} />
+                  <GooglePhotoThumbnail
+                    alt={photo.description ?? t("memoryForm", "photoReference")}
+                    mediaUrl={photo.thumbnailUrl ?? photo.url}
+                  />
                   <Button
                     type="button"
                     variant="secondary"
@@ -172,9 +214,14 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
                   </Button>
                 </div>
                 <div className="space-y-2 p-3 text-sm">
-                  <p className="font-medium">{photo.description || photo.externalId || t("memoryForm", "photoReference")}</p>
+                  <p className="font-medium">
+                    {photo.description ||
+                      photo.externalId ||
+                      t("memoryForm", "photoReference")}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {photo.providerStatus === "expired" || photo.providerStatus === "unavailable"
+                    {photo.providerStatus === "expired" ||
+                    photo.providerStatus === "unavailable"
                       ? t("memoryForm", "photoUnavailable")
                       : t("memoryForm", "photoReferenceSaved")}
                   </p>
@@ -184,7 +231,10 @@ export function MemoryDetailClient({ memoryId }: { memoryId: string }) {
           </div>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            {photosStatus.state === "permission-required" ? t("memoryForm", "photosPermissionRequired") : photosStatus.label}. {t("memoryForm", "memoryWorksWithoutPhotos")}
+            {photosStatus.state === "permission-required"
+              ? t("memoryForm", "photosPermissionRequired")
+              : t("common", "connected")}
+            . {t("memoryForm", "memoryWorksWithoutPhotos")}
           </p>
         )}
       </section>

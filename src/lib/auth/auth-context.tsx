@@ -11,6 +11,11 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ensureUserProfile } from "@/lib/auth/user-profile";
 import { auth, googleProvider } from "@/lib/firebase/client";
 
+import {
+  clearGooglePhotosAccess,
+  setGooglePhotosAccount,
+} from "@/services/google/photos";
+
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
@@ -26,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (currentUser) => {
+      setGooglePhotosAccount(currentUser?.uid ?? null);
       setUser(currentUser);
       setLoading(false);
 
@@ -43,7 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await signInWithPopup(auth, googleProvider);
         await ensureUserProfile(result.user);
       },
-      signOutUser: () => signOut(auth),
+      signOutUser: async () => {
+        clearGooglePhotosAccess();
+        await signOut(auth);
+      },
     }),
     [loading, user],
   );

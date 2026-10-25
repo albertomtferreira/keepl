@@ -24,9 +24,28 @@ import {
   peopleRepository,
   personNotesRepository,
 } from "@/repositories";
-import type { Group, ImportantDate, Interaction, Memory, Person, PersonNote, SearchResult, SearchScope } from "@/types";
+import type {
+  Group,
+  ImportantDate,
+  Interaction,
+  Memory,
+  Person,
+  PersonNote,
+  SearchResult,
+  SearchScope,
+} from "@/types";
 
-const scopes: { value: SearchScope; labelKey: "scopeAll" | "scopePeople" | "scopeNotes" | "scopeMemories" | "scopeDates" | "scopeInteractions" | "scopeGroups" }[] = [
+const scopes: {
+  value: SearchScope;
+  labelKey:
+    | "scopeAll"
+    | "scopePeople"
+    | "scopeNotes"
+    | "scopeMemories"
+    | "scopeDates"
+    | "scopeInteractions"
+    | "scopeGroups";
+}[] = [
   { value: "all", labelKey: "scopeAll" },
   { value: "people", labelKey: "scopePeople" },
   { value: "notes", labelKey: "scopeNotes" },
@@ -88,15 +107,21 @@ export function SearchClient() {
       setError(null);
 
       try {
-        const [peopleResult, notesResult, memoriesResult, datesResult, interactionsResult, groupsResult] =
-          await Promise.all([
-            peopleRepository.listActive(ownerId),
-            personNotesRepository.list(ownerId),
-            memoriesRepository.list(ownerId),
-            importantDatesRepository.listForOwner(ownerId),
-            interactionsRepository.list(ownerId),
-            groupsRepository.listByName(ownerId),
-          ]);
+        const [
+          peopleResult,
+          notesResult,
+          memoriesResult,
+          datesResult,
+          interactionsResult,
+          groupsResult,
+        ] = await Promise.all([
+          peopleRepository.listActive(ownerId),
+          personNotesRepository.list(ownerId),
+          memoriesRepository.list(ownerId),
+          importantDatesRepository.listForOwner(ownerId),
+          interactionsRepository.list(ownerId),
+          groupsRepository.listByName(ownerId),
+        ]);
 
         setPeople(peopleResult);
         setNotes(notesResult);
@@ -127,8 +152,19 @@ export function SearchClient() {
         },
         query,
         scope,
+        t,
       ),
-    [groups, importantDates, interactions, memories, notes, people, query, scope],
+    [
+      groups,
+      importantDates,
+      interactions,
+      memories,
+      notes,
+      people,
+      query,
+      scope,
+      t,
+    ],
   );
 
   const hasQuery = query.trim().length > 0;
@@ -164,12 +200,21 @@ export function SearchClient() {
         </div>
       </div>
 
-      {error ? <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       {loading ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">{t("searchPage", "loading")}</div>
+        <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
+          {t("searchPage", "loading")}
+        </div>
       ) : !hasQuery ? (
-        <EmptyState title={t("searchPage", "emptyTitle")} description={t("searchPage", "emptyDescription")} />
+        <EmptyState
+          title={t("searchPage", "emptyTitle")}
+          description={t("searchPage", "emptyDescription")}
+        />
       ) : results.length ? (
         <div className="grid gap-2">
           {results.map((result) => (
@@ -177,7 +222,10 @@ export function SearchClient() {
           ))}
         </div>
       ) : (
-        <EmptyState title={t("searchPage", "noMatchesTitle")} description={t("searchPage", "noMatchesDescription")} />
+        <EmptyState
+          title={t("searchPage", "noMatchesTitle")}
+          description={t("searchPage", "noMatchesDescription")}
+        />
       )}
     </div>
   );
@@ -188,7 +236,10 @@ function ResultRow({ result }: { result: SearchResult }) {
   const { t } = useI18n();
 
   return (
-    <Link href={result.href} className="flex items-start gap-3 rounded-lg border bg-white p-3 shadow-sm transition hover:bg-muted/50">
+    <Link
+      href={result.href}
+      className="flex items-start gap-3 rounded-lg border bg-white p-3 shadow-sm transition hover:bg-muted/50"
+    >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary">
         <Icon className="size-4" aria-hidden="true" />
       </div>
@@ -200,20 +251,34 @@ function ResultRow({ result }: { result: SearchResult }) {
           </span>
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {result.subtitle || t("searchPage", "matched", { fields: result.matchedFields.join(", ") })}
+          {result.subtitle ||
+            t("searchPage", "matched", {
+              fields: t("searchPage", resultTypeKeys[result.type]),
+            })}
         </p>
       </div>
     </Link>
   );
 }
 
-function EmptyState({ title, description }: { title: string; description: string }) {
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed bg-white/70 p-8 text-center">
       <div>
-        <Search className="mx-auto mb-3 size-5 text-muted-foreground" aria-hidden="true" />
+        <Search
+          className="mx-auto mb-3 size-5 text-muted-foreground"
+          aria-hidden="true"
+        />
         <h2 className="font-semibold">{title}</h2>
-        <p className="mt-2 max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          {description}
+        </p>
       </div>
     </div>
   );

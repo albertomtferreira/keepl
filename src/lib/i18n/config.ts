@@ -2,7 +2,12 @@ import type { Locale, LocaleOption } from "@/types/i18n";
 
 export const defaultLocale: Locale = "en";
 
-export const supportedLocales = ["en", "pt", "fr", "es"] as const satisfies readonly Locale[];
+export const supportedLocales = [
+  "en",
+  "pt",
+  "fr",
+  "es",
+] as const satisfies readonly Locale[];
 
 export const localeOptions: LocaleOption[] = [
   { code: "en", nativeName: "English", englishName: "English" },
@@ -11,7 +16,9 @@ export const localeOptions: LocaleOption[] = [
   { code: "es", nativeName: "Español", englishName: "Spanish" },
 ];
 
-export function isSupportedLocale(value: string | null | undefined): value is Locale {
+export function isSupportedLocale(
+  value: string | null | undefined,
+): value is Locale {
   return Boolean(value && supportedLocales.includes(value as Locale));
 }
 

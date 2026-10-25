@@ -3,9 +3,41 @@ import { Timestamp } from "firebase/firestore";
 import type { GoogleIntegrationStatus } from "@/services/google/integration-status";
 import type { PhotoReference } from "@/types";
 
-export const googlePhotosPickerScope = "https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
+export const googlePhotosPickerScope =
+  "https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
 
-const accessTokenStorageKey = "keepl.googlePhotos.accessToken";
+let accountId: string | null = null;
+let credential: {
+  accessToken: string;
+  ownerId: string;
+  expiresAt: number;
+} | null = null;
+let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+let revision = 0;
+const objectUrls = new Set<string>();
+const listeners = new Set<() => void>();
+export function subscribeGooglePhotos(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+export function setGooglePhotosAccount(ownerId: string | null) {
+  if (ownerId !== accountId) {
+    clearGooglePhotosAccess();
+    accountId = ownerId;
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem("keepl.googlePhotos.accessToken");
+    } catch {
+      /* Storage may be disabled; credentials are never read from it. */
+    }
+  }
+}
+export function getGooglePhotosSnapshot() {
+  return revision;
+}
 const pickerApiBaseUrl = "/api/google/photos/picker";
 
 export function getGooglePhotosIntegrationStatus(): GoogleIntegrationStatus {
@@ -13,14 +45,16 @@ export function getGooglePhotosIntegrationStatus(): GoogleIntegrationStatus {
     return {
       state: "connected",
       label: "Google Photos connected",
-      detail: "Keepl can launch the Google Photos picker. Selected photos are saved as references only.",
+      detail:
+        "Keepl can launch the Google Photos picker. Selected photos are saved as references only.",
     };
   }
 
   return {
     state: "permission-required",
     label: "Google Photos needs permission",
-    detail: "Photo references are supported, but Google Photos access is intentionally separate from sign-in.",
+    detail:
+      "Photo references are supported, but Google Photos access is intentionally separate from sign-in.",
   };
 }
 
@@ -70,20 +104,32 @@ type PickedMediaItemsResponse = {
   nextPageToken?: string;
 };
 
-export function saveGooglePhotosAccess(access: GooglePhotosAccess) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.setItem(accessTokenStorageKey, access.accessToken);
+export function saveGooglePhotosAccess(
+  access: GooglePhotosAccess & { ownerId: string; expiresAt: number },
+) {
+  if (
+    !accountId ||
+    access.ownerId !== accountId ||
+    access.expiresAt <= Date.now()
+  )
+    throw new Error("permission-required");
+  clearGooglePhotosAccess();
+  credential = access;
+  expiryTimer = setTimeout(
+    clearGooglePhotosAccess,
+    access.expiresAt - Date.now(),
+  );
+  revision += 1;
+  listeners.forEach((listener) => listener());
 }
 
 export function clearGooglePhotosAccess() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.removeItem(accessTokenStorageKey);
+  credential = null;
+  clearTimeout(expiryTimer);
+  objectUrls.forEach((url) => URL.revokeObjectURL(url));
+  objectUrls.clear();
+  revision += 1;
+  listeners.forEach((listener) => listener());
 }
 
 export function hasGooglePhotosAccessToken() {
@@ -91,11 +137,22 @@ export function hasGooglePhotosAccessToken() {
 }
 
 export function isGooglePhotosPickerAvailable() {
-  return hasGooglePhotosAccessToken() || (typeof window !== "undefined" && Boolean(getGooglePhotosPickerWindowApi()));
+  return hasGooglePhotosAccessToken();
 }
 
 export async function fetchGooglePhotoObjectUrl(mediaUrl: string) {
-  return URL.createObjectURL(await fetchGooglePhotoBlob(mediaUrl));
+  const current = credential;
+  const blob = await fetchGooglePhotoBlob(mediaUrl);
+  if (!current || credential !== current)
+    throw new Error("permission-required");
+  const url = URL.createObjectURL(blob);
+  objectUrls.add(url);
+  return url;
+}
+
+export function releaseGooglePhotoObjectUrl(url: string) {
+  objectUrls.delete(url);
+  URL.revokeObjectURL(url);
 }
 
 export function getGooglePhotoDownloadUrl(photo: PhotoReference) {
@@ -107,6 +164,7 @@ export function getGooglePhotoDownloadUrl(photo: PhotoReference) {
 }
 
 export async function fetchGooglePhotoBlob(mediaUrl: string) {
+  const currentCredential = credential;
   const accessToken = getGooglePhotosAccessToken();
 
   if (!accessToken) {
@@ -117,19 +175,30 @@ export async function fetchGooglePhotoBlob(mediaUrl: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ accessToken, mediaUrl }),
+    cache: "no-store",
+    body: JSON.stringify({ mediaUrl }),
   });
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      credential === currentCredential
+    ) {
       clearGooglePhotosAccess();
     }
 
     throw new Error(await getPickerErrorMessage(response));
   }
 
-  return response.blob();
+  const blob = await response.blob();
+  if (
+    getGooglePhotosAccessToken() !== accessToken ||
+    credential !== currentCredential
+  )
+    throw new Error("permission-required");
+  return blob;
 }
 
 export async function launchGooglePhotosPicker(): Promise<PhotoReference[]> {
@@ -139,14 +208,7 @@ export async function launchGooglePhotosPicker(): Promise<PhotoReference[]> {
     return launchGooglePhotosPickerRestFlow(accessToken);
   }
 
-  const pickerApi = getGooglePhotosPickerWindowApi();
-
-  if (!pickerApi) {
-    throw new Error("Google Photos picker is not available in this browser session.");
-  }
-
-  const result = await pickerApi.pick();
-  return result.mediaItems.map(toPhotoReference);
+  throw new Error("permission-required");
 }
 
 export function createManualGooglePhotoReference(input: {
@@ -165,7 +227,9 @@ export function createManualGooglePhotoReference(input: {
   });
 }
 
-export function toPhotoReference(media: GooglePhotosPickerMedia): PhotoReference {
+export function toPhotoReference(
+  media: GooglePhotosPickerMedia,
+): PhotoReference {
   return compactPhotoReference({
     source: "google-photos",
     externalId: media.id,
@@ -181,20 +245,38 @@ export function toPickedPhotoReference(media: PickedMediaItem): PhotoReference {
   return compactPhotoReference({
     source: "google-photos",
     externalId: media.id,
-    thumbnailUrl: media.mediaFile?.baseUrl ? `${media.mediaFile.baseUrl}=w640-h480` : undefined,
+    thumbnailUrl: media.mediaFile?.baseUrl
+      ? `${media.mediaFile.baseUrl}=w640-h480`
+      : undefined,
     url: media.mediaFile?.baseUrl,
     description: media.mediaFile?.filename,
     attribution: media.mediaFile?.mimeType ?? media.type,
-    capturedAt: media.createTime ? Timestamp.fromDate(new Date(media.createTime)) : undefined,
+    capturedAt: media.createTime
+      ? Timestamp.fromDate(new Date(media.createTime))
+      : undefined,
     providerStatus: "available",
     lastCheckedAt: Timestamp.now(),
   });
 }
 
-export function mergePhotoReferences(current: PhotoReference[], incoming: PhotoReference[]) {
+export function mergePhotoReferences(
+  current: PhotoReference[],
+  incoming: PhotoReference[],
+) {
   const seen = new Set<string>();
 
-  return [...current, ...incoming].filter((photo) => {
+  return [
+    ...current.filter(
+      (photo) =>
+        !incoming.some(
+          (next) =>
+            next.source === photo.source &&
+            next.externalId &&
+            next.externalId === photo.externalId,
+        ),
+    ),
+    ...incoming,
+  ].filter((photo) => {
     const key = `${photo.source}:${photo.externalId ?? photo.url ?? photo.thumbnailUrl ?? photo.description ?? ""}`;
 
     if (seen.has(key)) {
@@ -207,7 +289,11 @@ export function mergePhotoReferences(current: PhotoReference[], incoming: PhotoR
 }
 
 function compactPhotoReference(reference: PhotoReference): PhotoReference {
-  return Object.fromEntries(Object.entries(reference).filter(([, value]) => value !== undefined && value !== "")) as PhotoReference;
+  return Object.fromEntries(
+    Object.entries(reference).filter(
+      ([, value]) => value !== undefined && value !== "",
+    ),
+  ) as PhotoReference;
 }
 
 function withGooglePhotosDownloadParameter(mediaUrl: string) {
@@ -215,66 +301,114 @@ function withGooglePhotosDownloadParameter(mediaUrl: string) {
 }
 
 function stripGooglePhotosTransform(mediaUrl: string) {
-  return mediaUrl.replace(/=(?:w\d+(?:-h\d+)?(?:-c)?|h\d+(?:-w\d+)?(?:-c)?|d|dv)$/, "");
+  return mediaUrl.replace(
+    /=(?:w\d+(?:-h\d+)?(?:-c)?|h\d+(?:-w\d+)?(?:-c)?|d|dv)$/,
+    "",
+  );
 }
 
 function getGooglePhotosAccessToken() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return window.sessionStorage.getItem(accessTokenStorageKey);
+  if (
+    credential &&
+    (credential.ownerId !== accountId || credential.expiresAt <= Date.now())
+  )
+    clearGooglePhotosAccess();
+  return credential?.accessToken ?? null;
 }
 
 async function launchGooglePhotosPickerRestFlow(accessToken: string) {
-  const session = await createPickerSession(accessToken);
-  const pickerWindow = window.open(`${session.pickerUri}/autoclose`, "keepl-google-photos-picker", "popup,width=960,height=720");
-
-  if (!pickerWindow) {
-    window.location.assign(session.pickerUri);
-  }
-
+  const pickerWindow = window.open(
+    "about:blank",
+    "_blank",
+    "popup,width=960,height=720",
+  );
+  if (!pickerWindow) throw new Error("popup-blocked");
+  let session: PickingSession | undefined;
   try {
-    const completedSession = await waitForPickedMedia(accessToken, session);
+    session = await createPickerSession(accessToken);
+    const uri = new URL(session.pickerUri);
+    if (
+      uri.origin !== "https://photos.google.com" ||
+      uri.username ||
+      uri.password
+    )
+      throw new Error("invalid-picker");
+    pickerWindow.opener = null;
+    pickerWindow.location.replace(`${session.pickerUri}/autoclose`);
+    const completedSession = await waitForPickedMedia(
+      accessToken,
+      session,
+      pickerWindow,
+    );
     return await listPickedMediaReferences(accessToken, completedSession.id);
   } finally {
-    await deletePickerSession(accessToken, session.id).catch(() => undefined);
+    pickerWindow.close();
+    if (session)
+      await deletePickerSession(accessToken, session.id).catch(() => undefined);
   }
 }
 
-async function createPickerSession(accessToken: string): Promise<PickingSession> {
+async function createPickerSession(
+  accessToken: string,
+): Promise<PickingSession> {
   return fetchPickerApi(`${pickerApiBaseUrl}/sessions`, {
     method: "POST",
-    body: JSON.stringify({ accessToken }),
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 
-async function getPickerSession(accessToken: string, sessionId: string): Promise<PickingSession> {
-  const url = new URL(`${pickerApiBaseUrl}/sessions/${sessionId}`, window.location.origin);
-  url.searchParams.set("accessToken", accessToken);
-  return fetchPickerApi(url.toString());
+async function getPickerSession(
+  accessToken: string,
+  sessionId: string,
+): Promise<PickingSession> {
+  const url = new URL(
+    `${pickerApiBaseUrl}/sessions/${sessionId}`,
+    window.location.origin,
+  );
+
+  return fetchPickerApi(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
 
 async function deletePickerSession(accessToken: string, sessionId: string) {
   await fetch(`${pickerApiBaseUrl}/sessions/${sessionId}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken }),
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 
-async function waitForPickedMedia(accessToken: string, session: PickingSession) {
+async function waitForPickedMedia(
+  accessToken: string,
+  session: PickingSession,
+  popup: Window,
+) {
   const startedAt = Date.now();
   let currentSession = session;
 
   while (!currentSession.mediaItemsSet) {
-    const pollInterval = durationToMilliseconds(currentSession.pollingConfig?.pollInterval, 3000);
-    const timeoutIn = durationToMilliseconds(currentSession.pollingConfig?.timeoutIn, 180000);
+    const pollInterval = durationToMilliseconds(
+      currentSession.pollingConfig?.pollInterval,
+      3000,
+    );
+    const timeoutIn = durationToMilliseconds(
+      currentSession.pollingConfig?.timeoutIn,
+      180000,
+    );
 
     if (Date.now() - startedAt > timeoutIn) {
-      throw new Error("Google Photos picker timed out before selection finished.");
+      throw new Error(
+        "Google Photos picker timed out before selection finished.",
+      );
     }
 
+    if (popup.closed) {
+      currentSession = await getPickerSession(accessToken, session.id);
+      if (!currentSession.mediaItemsSet) throw new Error("picker-cancelled");
+      break;
+    }
+    if (getGooglePhotosAccessToken() !== accessToken)
+      throw new Error("permission-required");
     await wait(pollInterval);
     currentSession = await getPickerSession(accessToken, session.id);
   }
@@ -282,13 +416,19 @@ async function waitForPickedMedia(accessToken: string, session: PickingSession) 
   return currentSession;
 }
 
-async function listPickedMediaReferences(accessToken: string, sessionId: string) {
+async function listPickedMediaReferences(
+  accessToken: string,
+  sessionId: string,
+) {
   const photos: PhotoReference[] = [];
   let pageToken: string | undefined;
 
   do {
-    const url = new URL(`${pickerApiBaseUrl}/media-items`, window.location.origin);
-    url.searchParams.set("accessToken", accessToken);
+    const url = new URL(
+      `${pickerApiBaseUrl}/media-items`,
+      window.location.origin,
+    );
+
     url.searchParams.set("sessionId", sessionId);
     url.searchParams.set("pageSize", "100");
 
@@ -296,7 +436,10 @@ async function listPickedMediaReferences(accessToken: string, sessionId: string)
       url.searchParams.set("pageToken", pageToken);
     }
 
-    const response: PickedMediaItemsResponse = await fetchPickerApi(url.toString());
+    const response: PickedMediaItemsResponse = await fetchPickerApi(
+      url.toString(),
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
     photos.push(...(response.mediaItems ?? []).map(toPickedPhotoReference));
     pageToken = response.nextPageToken;
   } while (pageToken);
@@ -304,9 +447,19 @@ async function listPickedMediaReferences(accessToken: string, sessionId: string)
   return photos;
 }
 
-async function fetchPickerApi<T>(url: string, init: RequestInit = {}): Promise<T> {
+async function fetchPickerApi<T>(
+  url: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const currentCredential = credential;
+  if (
+    new Headers(init.headers).get("Authorization") !==
+    `Bearer ${getGooglePhotosAccessToken()}`
+  )
+    throw new Error("permission-required");
   const response = await fetch(url, {
     ...init,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...init.headers,
@@ -314,30 +467,30 @@ async function fetchPickerApi<T>(url: string, init: RequestInit = {}): Promise<T
   });
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      credential === currentCredential
+    ) {
       clearGooglePhotosAccess();
     }
 
     throw new Error(await getPickerErrorMessage(response));
   }
 
-  return response.json() as Promise<T>;
+  if (
+    new Headers(init.headers).get("Authorization") !==
+    `Bearer ${getGooglePhotosAccessToken()}`
+  )
+    throw new Error("permission-required");
+  const body = (await response.json()) as T;
+  if (credential !== currentCredential) throw new Error("permission-required");
+  return body;
 }
 
 async function getPickerErrorMessage(response: Response) {
-  const fallback = `Google Photos request failed with status ${response.status}.`;
-
-  try {
-    const body = (await response.json()) as { error?: { message?: string; status?: string } | string };
-
-    if (typeof body.error === "string") {
-      return body.error;
-    }
-
-    return body.error?.message ?? body.error?.status ?? fallback;
-  } catch {
-    return fallback;
-  }
+  return response.status === 401 || response.status === 403
+    ? "permission-required"
+    : "photos-request-failed";
 }
 
 function durationToMilliseconds(value: string | undefined, fallback: number) {
@@ -351,12 +504,4 @@ function durationToMilliseconds(value: string | undefined, fallback: number) {
 
 function wait(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-}
-
-function getGooglePhotosPickerWindowApi() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return (window as Window & { googlePhotosPicker?: { pick: () => Promise<GooglePhotosPickerResult> } }).googlePhotosPicker ?? null;
 }

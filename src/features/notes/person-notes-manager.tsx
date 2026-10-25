@@ -1,23 +1,27 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NotebookPen, Pencil, Pin, PinOff, Save, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import {
+  NotebookPen,
+  Pencil,
+  Pin,
+  PinOff,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
+import { createNoteSchema } from "./validation";
 
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { useAuth } from "@/lib/auth/auth-context";
 import { personNotesRepository } from "@/repositories/person-notes";
 import type { PersonNote } from "@/types";
 
-const noteSchema = z.object({
-  title: z.string().trim().optional(),
-  body: z.string().trim().min(1, "Note is required"),
-  pinned: z.boolean(),
-});
-
-type NoteFormValues = z.infer<typeof noteSchema>;
+type NoteFormValues = z.infer<ReturnType<typeof createNoteSchema>>;
 
 export function PersonNotesManager({
   notes,
@@ -29,17 +33,29 @@ export function PersonNotesManager({
   personId: string;
 }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [editing, setEditing] = useState<PersonNote | "new" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<
+    | keyof (typeof import("@/lib/i18n/messages/en.json"))["notes"]
+    | "signInSave"
+    | null
+  >(null);
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted },
     handleSubmit,
+    trigger,
     register,
     reset,
   } = useForm<NoteFormValues>({
-    resolver: zodResolver(noteSchema),
+    resolver: zodResolver(
+      createNoteSchema({ validationBody: t("notes", "validationBody") }),
+    ),
     values: formValues(editing),
   });
+
+  useEffect(() => {
+    if (isSubmitted) void trigger();
+  }, [isSubmitted, t, trigger]);
 
   function startEditing(note: PersonNote | "new") {
     setError(null);
@@ -49,7 +65,7 @@ export function PersonNotesManager({
 
   async function onSubmit(values: NoteFormValues) {
     if (!user) {
-      setError("Sign in again before saving.");
+      setError("signInSave");
       return;
     }
 
@@ -75,12 +91,18 @@ export function PersonNotesManager({
       return;
     }
 
-    await personNotesRepository.update(user.uid, note.id, { pinned: !note.pinned });
-    onChange(notes.map((item) => (item.id === note.id ? { ...item, pinned: !note.pinned } : item)));
+    await personNotesRepository.update(user.uid, note.id, {
+      pinned: !note.pinned,
+    });
+    onChange(
+      notes.map((item) =>
+        item.id === note.id ? { ...item, pinned: !note.pinned } : item,
+      ),
+    );
   }
 
   async function deleteNote(note: PersonNote) {
-    if (!user || !confirm("Delete this note?")) {
+    if (!user || !confirm(t("notes", "deleteConfirm"))) {
       return;
     }
 
@@ -88,7 +110,9 @@ export function PersonNotesManager({
     onChange(notes.filter((item) => item.id !== note.id));
   }
 
-  const sortedNotes = [...notes].sort((a, b) => Number(b.pinned) - Number(a.pinned));
+  const sortedNotes = [...notes].sort(
+    (a, b) => Number(b.pinned) - Number(a.pinned),
+  );
 
   return (
     <div className="space-y-3">
@@ -97,19 +121,48 @@ export function PersonNotesManager({
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                {note.pinned ? <Pin className="size-3.5 text-muted-foreground" aria-hidden="true" /> : null}
-                {note.title ? <p className="font-medium">{note.title}</p> : null}
+                {note.pinned ? (
+                  <Pin
+                    className="size-3.5 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                {note.title ? (
+                  <p className="font-medium">{note.title}</p>
+                ) : null}
               </div>
               <p className="whitespace-pre-wrap text-sm">{note.body}</p>
             </div>
             <div className="flex gap-1">
-              <Button type="button" variant="ghost" size="icon" aria-label="Toggle pinned" onClick={() => togglePinned(note)}>
-                {note.pinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("notes", "togglePinned")}
+                onClick={() => togglePinned(note)}
+              >
+                {note.pinned ? (
+                  <PinOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Pin className="size-4" aria-hidden="true" />
+                )}
               </Button>
-              <Button type="button" variant="ghost" size="icon" aria-label="Edit note" onClick={() => startEditing(note)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("notes", "edit")}
+                onClick={() => startEditing(note)}
+              >
                 <Pencil className="size-4" aria-hidden="true" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" aria-label="Delete note" onClick={() => deleteNote(note)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("notes", "delete")}
+                onClick={() => deleteNote(note)}
+              >
                 <Trash2 className="size-4" aria-hidden="true" />
               </Button>
             </div>
@@ -118,33 +171,54 @@ export function PersonNotesManager({
       ))}
 
       {editing ? (
-        <form className="space-y-3 rounded-md border p-3" onSubmit={handleSubmit(onSubmit)}>
-          <Field label="Title" error={errors.title?.message}>
+        <form
+          className="space-y-3 rounded-md border p-3"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <Field label={t("notes", "title")} error={errors.title?.message}>
             <input className={inputClassName} {...register("title")} />
           </Field>
-          <Field label="Note" error={errors.body?.message}>
-            <textarea className={`${inputClassName} h-24 py-2`} {...register("body")} />
+          <Field label={t("notes", "body")} error={errors.body?.message}>
+            <textarea
+              className={`${inputClassName} h-24 py-2`}
+              {...register("body")}
+            />
           </Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register("pinned")} />
-            Pin note
+            {t("notes", "pin")}
           </label>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive">
+              {error === "signInSave"
+                ? t("common", "signInSave")
+                : t("notes", error)}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setEditing(null)}
+            >
               <X className="size-4" aria-hidden="true" />
-              Cancel
+              {t("common", "cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               <Save className="size-4" aria-hidden="true" />
-              Save
+              {t("common", "save")}
             </Button>
           </div>
         </form>
       ) : (
-        <Button type="button" variant="outline" size="sm" onClick={() => startEditing("new")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => startEditing("new")}
+        >
           <NotebookPen className="size-4" aria-hidden="true" />
-          Add note
+          {t("notes", "add")}
         </Button>
       )}
     </div>
@@ -163,12 +237,22 @@ function formValues(editing: PersonNote | "new" | null): NoteFormValues {
 const inputClassName =
   "h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30";
 
-function Field({ children, error, label }: { children: React.ReactNode; error?: string; label: string }) {
+function Field({
+  children,
+  error,
+  label,
+}: {
+  children: React.ReactNode;
+  error?: string;
+  label: string;
+}) {
   return (
     <label className="block space-y-1.5">
       <span className="text-sm font-medium">{label}</span>
       {children}
-      {error ? <span className="block text-xs text-destructive">{error}</span> : null}
+      {error ? (
+        <span className="block text-xs text-destructive">{error}</span>
+      ) : null}
     </label>
   );
 }

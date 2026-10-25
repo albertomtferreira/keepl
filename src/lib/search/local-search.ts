@@ -1,3 +1,4 @@
+import { createTranslator, type Translator } from "@/lib/i18n/translate";
 import { differenceInCalendarDays } from "date-fns";
 
 import { getNextAnnualOccurrence } from "@/lib/dates/flexible-date";
@@ -42,7 +43,12 @@ const scopeToResultTypes: Record<SearchScope, SearchResult["type"][]> = {
   groups: ["group"],
 };
 
-export function searchLocalRecords(input: LocalSearchInput, query: string, scope: SearchScope = "all"): SearchResult[] {
+export function searchLocalRecords(
+  input: LocalSearchInput,
+  query: string,
+  scope: SearchScope = "all",
+  t: Translator = createTranslator("en"),
+): SearchResult[] {
   const terms = tokenize(query);
 
   if (!terms.length) {
@@ -51,14 +57,19 @@ export function searchLocalRecords(input: LocalSearchInput, query: string, scope
 
   const peopleById = new Map(input.people.map((person) => [person.id, person]));
   const groupsById = new Map(input.groups.map((group) => [group.id, group]));
-  const groupNamesById = new Map(input.groups.map((group) => [group.id, group.name]));
+  const groupNamesById = new Map(
+    input.groups.map((group) => [group.id, group.name]),
+  );
   const allowedTypes = new Set(scopeToResultTypes[scope]);
 
-  return buildCandidates(input, peopleById, groupsById, groupNamesById)
+  return buildCandidates(input, peopleById, groupsById, groupNamesById, t)
     .filter((candidate) => allowedTypes.has(candidate.type))
     .map((candidate) => scoreCandidate(candidate, terms))
     .filter((result): result is SearchResult => Boolean(result))
-    .sort((first, second) => second.score - first.score || first.title.localeCompare(second.title));
+    .sort(
+      (first, second) =>
+        second.score - first.score || first.title.localeCompare(second.title),
+    );
 }
 
 function buildCandidates(
@@ -66,26 +77,37 @@ function buildCandidates(
   peopleById: Map<string, Person>,
   groupsById: Map<string, Group>,
   groupNamesById: Map<string, string>,
+  t: Translator,
 ): Candidate[] {
   return [
     ...input.people
       .filter((person) => !person.archivedAt)
-      .map((person) => personCandidate(person, groupNamesById)),
-    ...input.notes.map((note) => noteCandidate(note, peopleById)),
+      .map((person) => personCandidate(person, groupNamesById, t)),
+    ...input.notes.map((note) => noteCandidate(note, peopleById, t)),
     ...input.memories.map((memory) => memoryCandidate(memory, peopleById)),
-    ...input.importantDates.map((date) => dateCandidate(date, peopleById)),
-    ...input.interactions.map((interaction) => interactionCandidate(interaction, peopleById)),
-    ...input.groups.map((group) => groupCandidate(group, input.people, groupsById)),
+    ...input.importantDates.map((date) => dateCandidate(date, peopleById, t)),
+    ...input.interactions.map((interaction) =>
+      interactionCandidate(interaction, peopleById, t),
+    ),
+    ...input.groups.map((group) =>
+      groupCandidate(group, input.people, groupsById, t),
+    ),
   ];
 }
 
-function personCandidate(person: Person, groupNamesById: Map<string, string>): Candidate {
+function personCandidate(
+  person: Person,
+  groupNamesById: Map<string, string>,
+  t: Translator,
+): Candidate {
   return {
     id: person.id,
     type: "person",
     title: person.displayName,
     subtitle: [
-      person.nickname ? `Nickname: ${person.nickname}` : undefined,
+      person.nickname
+        ? t("searchResults", "nickname", { name: person.nickname })
+        : undefined,
       ...(person.groupIds ?? []).map((id) => groupNamesById.get(id)),
       person.emails?.[0]?.value,
       person.phoneNumbers?.[0]?.value,
@@ -101,22 +123,54 @@ function personCandidate(person: Person, groupNamesById: Map<string, string>): C
       { name: "first name", value: person.firstName, weight: 24 },
       { name: "last name", value: person.lastName, weight: 24 },
       { name: "nickname", value: person.nickname, weight: 26 },
-      { name: "email", value: person.emails?.map((email) => email.value).join(" "), weight: 16 },
-      { name: "phone", value: person.phoneNumbers?.map((phone) => phone.value).join(" "), weight: 16 },
-      { name: "group", value: (person.groupIds ?? []).map((id) => groupNamesById.get(id)).join(" "), weight: 12 },
-      { name: "social", value: person.socialProfiles?.map((profile) => `${profile.platform} ${profile.handle ?? ""} ${profile.url ?? ""}`).join(" "), weight: 8 },
+      {
+        name: "email",
+        value: person.emails?.map((email) => email.value).join(" "),
+        weight: 16,
+      },
+      {
+        name: "phone",
+        value: person.phoneNumbers?.map((phone) => phone.value).join(" "),
+        weight: 16,
+      },
+      {
+        name: "group",
+        value: (person.groupIds ?? [])
+          .map((id) => groupNamesById.get(id))
+          .join(" "),
+        weight: 12,
+      },
+      {
+        name: "social",
+        value: person.socialProfiles
+          ?.map(
+            (profile) =>
+              `${profile.platform} ${profile.handle ?? ""} ${profile.url ?? ""}`,
+          )
+          .join(" "),
+        weight: 8,
+      },
     ],
   };
 }
 
-function noteCandidate(note: PersonNote, peopleById: Map<string, Person>): Candidate {
+function noteCandidate(
+  note: PersonNote,
+  peopleById: Map<string, Person>,
+  t: Translator,
+): Candidate {
   const person = peopleById.get(note.personId);
 
   return {
     id: note.id,
     type: "note",
-    title: note.title || note.body.slice(0, 64) || "Untitled note",
-    subtitle: person ? `Note about ${person.displayName}` : "Note",
+    title:
+      note.title ||
+      note.body.slice(0, 64) ||
+      t("searchResults", "untitledNote"),
+    subtitle: person
+      ? t("searchResults", "noteAbout", { name: person.displayName })
+      : t("searchResults", "note"),
     href: `/people/${note.personId}`,
     score: 0,
     boost: note.pinned ? 18 : 4,
@@ -129,9 +183,17 @@ function noteCandidate(note: PersonNote, peopleById: Map<string, Person>): Candi
   };
 }
 
-function memoryCandidate(memory: Memory, peopleById: Map<string, Person>): Candidate {
-  const people = memory.peopleIds.map((id) => peopleById.get(id)?.displayName).filter(Boolean);
-  const ageDays = Math.max(0, differenceInCalendarDays(new Date(), memory.startDate.toDate()));
+function memoryCandidate(
+  memory: Memory,
+  peopleById: Map<string, Person>,
+): Candidate {
+  const people = memory.peopleIds
+    .map((id) => peopleById.get(id)?.displayName)
+    .filter(Boolean);
+  const ageDays = Math.max(
+    0,
+    differenceInCalendarDays(new Date(), memory.startDate.toDate()),
+  );
   const recentBoost = Math.max(0, 18 - Math.floor(ageDays / 14));
 
   return {
@@ -153,17 +215,30 @@ function memoryCandidate(memory: Memory, peopleById: Map<string, Person>): Candi
   };
 }
 
-function dateCandidate(date: ImportantDate, peopleById: Map<string, Person>): Candidate {
+function dateCandidate(
+  date: ImportantDate,
+  peopleById: Map<string, Person>,
+  t: Translator,
+): Candidate {
   const person = peopleById.get(date.personId);
-  const nextOccurrence = date.repeatsAnnually ? getNextAnnualOccurrence(date.date) : null;
-  const daysUntil = nextOccurrence ? differenceInCalendarDays(nextOccurrence, new Date()) : null;
-  const upcomingBoost = daysUntil !== null && daysUntil >= 0 && daysUntil <= 30 ? 16 - Math.floor(daysUntil / 2) : 0;
+  const nextOccurrence = date.repeatsAnnually
+    ? getNextAnnualOccurrence(date.date)
+    : null;
+  const daysUntil = nextOccurrence
+    ? differenceInCalendarDays(nextOccurrence, new Date())
+    : null;
+  const upcomingBoost =
+    daysUntil !== null && daysUntil >= 0 && daysUntil <= 30
+      ? 16 - Math.floor(daysUntil / 2)
+      : 0;
 
   return {
     id: date.id,
     type: "date",
     title: date.title,
-    subtitle: person ? `Date for ${person.displayName}` : "Important date",
+    subtitle: person
+      ? t("searchResults", "dateFor", { name: person.displayName })
+      : t("searchResults", "importantDate"),
     href: `/people/${date.personId}`,
     score: 0,
     boost: upcomingBoost,
@@ -177,14 +252,20 @@ function dateCandidate(date: ImportantDate, peopleById: Map<string, Person>): Ca
   };
 }
 
-function interactionCandidate(interaction: Interaction, peopleById: Map<string, Person>): Candidate {
+function interactionCandidate(
+  interaction: Interaction,
+  peopleById: Map<string, Person>,
+  t: Translator,
+): Candidate {
   const person = peopleById.get(interaction.personId);
 
   return {
     id: interaction.id,
     type: "interaction",
-    title: interaction.summary || `${interaction.kind[0].toUpperCase()}${interaction.kind.slice(1)}`,
-    subtitle: person ? `Interaction with ${person.displayName}` : "Interaction",
+    title: interaction.summary || t("interactions", interaction.kind),
+    subtitle: person
+      ? t("searchResults", "interactionWith", { name: person.displayName })
+      : t("searchResults", "interaction"),
     href: `/people/${interaction.personId}`,
     score: 0,
     boost: 2,
@@ -198,7 +279,12 @@ function interactionCandidate(interaction: Interaction, peopleById: Map<string, 
   };
 }
 
-function groupCandidate(group: Group, people: Person[], groupsById: Map<string, Group>): Candidate {
+function groupCandidate(
+  group: Group,
+  people: Person[],
+  groupsById: Map<string, Group>,
+  t: Translator,
+): Candidate {
   const memberNames = people
     .filter((person) => person.groupIds?.includes(group.id))
     .map((person) => person.displayName)
@@ -208,7 +294,7 @@ function groupCandidate(group: Group, people: Person[], groupsById: Map<string, 
     id: group.id,
     type: "group",
     title: group.name,
-    subtitle: group.description || "Group",
+    subtitle: group.description || t("searchResults", "group"),
     href: `/people?group=${group.id}`,
     score: 0,
     boost: 8,
@@ -221,7 +307,10 @@ function groupCandidate(group: Group, people: Person[], groupsById: Map<string, 
   };
 }
 
-function scoreCandidate(candidate: Candidate, terms: string[]): SearchResult | null {
+function scoreCandidate(
+  candidate: Candidate,
+  terms: string[],
+): SearchResult | null {
   const matchedFields = new Set<string>();
   let score = 0;
 

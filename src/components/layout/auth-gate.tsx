@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -7,6 +8,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const { loading, user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -22,7 +24,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       <div className="grid min-h-dvh place-items-center bg-[#fbfaf7] text-muted-foreground">
         <div className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          Opening Keepl
+          {t("app", "opening")}
         </div>
       </div>
     );

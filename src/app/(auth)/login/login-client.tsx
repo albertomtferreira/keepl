@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { ArrowRight, HeartHandshake, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 
 export function LoginClient() {
+  const { t } = useI18n();
   const { loading, signInWithGoogle, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [error, setError] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const next = searchParams.get("next") || "/home";
 
@@ -22,9 +25,12 @@ export function LoginClient() {
 
   async function handleSignIn() {
     setSigningIn(true);
+    setError(false);
     try {
       await signInWithGoogle();
       router.replace(next);
+    } catch {
+      setError(true);
     } finally {
       setSigningIn(false);
     }
@@ -40,16 +46,24 @@ export function LoginClient() {
         <div className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="max-w-2xl">
             <p className="mb-4 text-sm font-medium text-muted-foreground">
-              Private, person-centred memory keeping.
+              {t("login", "tagline")}
             </p>
             <h1 className="text-4xl font-semibold leading-tight tracking-normal text-balance sm:text-5xl">
-              Remember the people and details that make life feel close.
+              {t("login", "title")}
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Sign in with Google to keep your people, memories, dates, and notes in
-              your own private Keepl space.
+              {t("login", "description")}
             </p>
-            <Button className="mt-8 gap-2" onClick={handleSignIn} disabled={loading || signingIn}>
+            {error ? (
+              <p role="alert" className="mt-3 text-sm text-destructive">
+                {t("login", "error")}
+              </p>
+            ) : null}
+            <Button
+              className="mt-8 gap-2"
+              onClick={handleSignIn}
+              disabled={loading || signingIn}
+            >
               {signingIn ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               ) : (
@@ -60,11 +74,13 @@ export function LoginClient() {
           </div>
 
           <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <HeartHandshake className="mb-5 size-6 text-primary" aria-hidden="true" />
-            <h2 className="text-lg font-semibold">Keep people close</h2>
+            <HeartHandshake
+              className="mb-5 size-6 text-primary"
+              aria-hidden="true"
+            />
+            <h2 className="text-lg font-semibold">{t("login", "keepClose")}</h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Keepl starts with a gentle home for names, dates, notes, memories,
-              and the relationships around them.
+              {t("login", "hint")}
             </p>
           </div>
         </div>

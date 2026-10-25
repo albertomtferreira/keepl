@@ -1,12 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { addYears, differenceInCalendarDays, startOfDay, subDays } from "date-fns";
+import {
+  addYears,
+  differenceInCalendarDays,
+  startOfDay,
+  subDays,
+} from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import { CalendarPlus, Pencil, Save, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
+import { createDateSchema, reminderPresetValues } from "./validation";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -22,21 +28,9 @@ import { importantDatesRepository } from "@/repositories/important-dates";
 import { remindersRepository } from "@/repositories/reminders";
 import type { FlexibleDate, ImportantDate, ImportantDateKind } from "@/types";
 
-const reminderPresetValues = ["none", "0", "1", "7", "14", "30"] as const;
-
 type ReminderPresetValue = (typeof reminderPresetValues)[number];
 
-const dateSchema = z.object({
-  title: z.string().trim().min(1, "Title is required"),
-  date: z.string().min(1, "Date is required"),
-  includeYear: z.boolean(),
-  kind: z.enum(["birthday", "anniversary", "holiday", "custom"]),
-  repeatsAnnually: z.boolean(),
-  reminderPreset: z.enum(reminderPresetValues),
-  notes: z.string().trim().optional(),
-});
-
-type DateFormValues = z.infer<typeof dateSchema>;
+type DateFormValues = z.infer<ReturnType<typeof createDateSchema>>;
 
 export function ImportantDateManager({
   dates,
@@ -48,19 +42,33 @@ export function ImportantDateManager({
   personId: string;
 }) {
   const { user } = useAuth();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [today] = useState(() => new Date());
   const [editing, setEditing] = useState<ImportantDate | "new" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<
+    | keyof (typeof import("@/lib/i18n/messages/en.json"))["importantDates"]
+    | "signInSave"
+    | null
+  >(null);
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted },
     handleSubmit,
+    trigger,
     register,
     reset,
   } = useForm<DateFormValues>({
-    resolver: zodResolver(dateSchema),
+    resolver: zodResolver(
+      createDateSchema({
+        validationTitle: t("importantDates", "validationTitle"),
+        validationDate: t("importantDates", "validationDate"),
+      }),
+    ),
     values: formValues(editing),
   });
+
+  useEffect(() => {
+    if (isSubmitted) void trigger();
+  }, [isSubmitted, t, trigger]);
 
   function startEditing(date: ImportantDate | "new") {
     setError(null);
@@ -71,21 +79,25 @@ export function ImportantDateManager({
       return;
     }
 
-    void remindersRepository.listForImportantDate(user.uid, date.id).then((reminders) => {
-      const scheduledReminder = reminders.find((reminder) => reminder.status === "scheduled");
-      reset(formValues(date, scheduledReminder?.remindAt.toDate()));
-    });
+    void remindersRepository
+      .listForImportantDate(user.uid, date.id)
+      .then((reminders) => {
+        const scheduledReminder = reminders.find(
+          (reminder) => reminder.status === "scheduled",
+        );
+        reset(formValues(date, scheduledReminder?.remindAt.toDate()));
+      });
   }
 
   async function onSubmit(values: DateFormValues) {
     if (!user) {
-      setError("Sign in again before saving.");
+      setError("signInSave");
       return;
     }
 
     const date = flexibleDateFromInput(values.date, values.includeYear);
     if (!date) {
-      setError("Use a valid date.");
+      setError("invalidDate");
       return;
     }
 
@@ -104,7 +116,10 @@ export function ImportantDateManager({
       importantDateId = editing.id;
       await importantDatesRepository.update(user.uid, importantDateId, payload);
     } else {
-      importantDateId = await importantDatesRepository.create(user.uid, payload);
+      importantDateId = await importantDatesRepository.create(
+        user.uid,
+        payload,
+      );
     }
 
     await replaceReminderForImportantDate(user.uid, importantDateId, {
@@ -120,7 +135,10 @@ export function ImportantDateManager({
   }
 
   async function deleteDate(date: ImportantDate) {
-    if (!user || !confirm(`Delete ${date.title}?`)) {
+    if (
+      !user ||
+      !confirm(t("importantDates", "deleteConfirm", { name: date.title }))
+    ) {
       return;
     }
 
@@ -133,7 +151,9 @@ export function ImportantDateManager({
     <div className="space-y-3">
       {dates.map((date) => {
         const next = getNextAnnualOccurrence(date.date);
-        const daysUntil = next ? Math.max(0, differenceInCalendarDays(next, today)) : null;
+        const daysUntil = next
+          ? Math.max(0, differenceInCalendarDays(next, today))
+          : null;
         return (
           <div key={date.id} className="rounded-md border p-3">
             <div className="flex items-start justify-between gap-3">
@@ -141,15 +161,31 @@ export function ImportantDateManager({
                 <p className="font-medium">{date.title}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatFlexibleDate(date.date, locale)}
-                  {daysUntil !== null ? ` · ${formatRelativeDateLabel(daysUntil, locale)}` : ""}
+                  {daysUntil !== null
+                    ? ` · ${formatRelativeDateLabel(daysUntil, locale)}`
+                    : ""}
                 </p>
-                {date.notes ? <p className="mt-2 text-sm">{date.notes}</p> : null}
+                {date.notes ? (
+                  <p className="mt-2 text-sm">{date.notes}</p>
+                ) : null}
               </div>
               <div className="flex gap-1">
-                <Button type="button" variant="ghost" size="icon" aria-label="Edit date" onClick={() => startEditing(date)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("importantDates", "edit")}
+                  onClick={() => startEditing(date)}
+                >
                   <Pencil className="size-4" aria-hidden="true" />
                 </Button>
-                <Button type="button" variant="ghost" size="icon" aria-label="Delete date" onClick={() => deleteDate(date)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("importantDates", "delete")}
+                  onClick={() => deleteDate(date)}
+                >
                   <Trash2 className="size-4" aria-hidden="true" />
                 </Button>
               </div>
@@ -159,67 +195,118 @@ export function ImportantDateManager({
       })}
 
       {editing ? (
-        <form className="space-y-3 rounded-md border p-3" onSubmit={handleSubmit(onSubmit)}>
-          <Field label="Title" error={errors.title?.message}>
+        <form
+          className="space-y-3 rounded-md border p-3"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <Field
+            label={t("importantDates", "title")}
+            error={errors.title?.message}
+          >
             <input className={inputClassName} {...register("title")} />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Date" error={errors.date?.message}>
-              <input className={inputClassName} type="date" {...register("date")} />
+            <Field
+              label={t("importantDates", "date")}
+              error={errors.date?.message}
+            >
+              <input
+                className={inputClassName}
+                type="date"
+                {...register("date")}
+              />
             </Field>
-            <Field label="Kind" error={errors.kind?.message}>
+            <Field
+              label={t("importantDates", "kind")}
+              error={errors.kind?.message}
+            >
               <select className={inputClassName} {...register("kind")}>
-                <option value="birthday">Birthday</option>
-                <option value="anniversary">Anniversary</option>
-                <option value="holiday">Holiday</option>
-                <option value="custom">Custom</option>
+                <option value="birthday">
+                  {t("importantDates", "birthday")}
+                </option>
+                <option value="anniversary">
+                  {t("importantDates", "anniversary")}
+                </option>
+                <option value="holiday">
+                  {t("importantDates", "holiday")}
+                </option>
+                <option value="custom">{t("importantDates", "custom")}</option>
               </select>
             </Field>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register("includeYear")} />
-            Year is known
+            {t("importantDates", "includeYear")}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register("repeatsAnnually")} />
-            Repeats annually
+            {t("importantDates", "repeatsAnnually")}
           </label>
-          <Field label="Reminder" error={errors.reminderPreset?.message}>
+          <Field
+            label={t("importantDates", "reminder")}
+            error={errors.reminderPreset?.message}
+          >
             <select className={inputClassName} {...register("reminderPreset")}>
-              <option value="none">No reminder</option>
-              <option value="0">Same day</option>
-              <option value="1">1 day before</option>
-              <option value="7">1 week before</option>
-              <option value="14">2 weeks before</option>
-              <option value="30">1 month before</option>
+              <option value="none">{t("importantDates", "none")}</option>
+              <option value="0">{t("importantDates", "sameDay")}</option>
+              <option value="1">{t("importantDates", "dayBefore")}</option>
+              <option value="7">{t("importantDates", "weekBefore")}</option>
+              <option value="14">
+                {t("importantDates", "twoWeeksBefore")}
+              </option>
+              <option value="30">{t("importantDates", "monthBefore")}</option>
             </select>
           </Field>
-          <Field label="Notes" error={errors.notes?.message}>
-            <textarea className={`${inputClassName} h-20 py-2`} {...register("notes")} />
+          <Field
+            label={t("importantDates", "notes")}
+            error={errors.notes?.message}
+          >
+            <textarea
+              className={`${inputClassName} h-20 py-2`}
+              {...register("notes")}
+            />
           </Field>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive">
+              {error === "signInSave"
+                ? t("common", "signInSave")
+                : t("importantDates", error)}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setEditing(null)}
+            >
               <X className="size-4" aria-hidden="true" />
-              Cancel
+              {t("common", "cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               <Save className="size-4" aria-hidden="true" />
-              Save
+              {t("common", "save")}
             </Button>
           </div>
         </form>
       ) : (
-        <Button type="button" variant="outline" size="sm" onClick={() => startEditing("new")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => startEditing("new")}
+        >
           <CalendarPlus className="size-4" aria-hidden="true" />
-          Add date
+          {t("importantDates", "add")}
         </Button>
       )}
     </div>
   );
 }
 
-function formValues(editing: ImportantDate | "new" | null, reminderDate?: Date): DateFormValues {
+function formValues(
+  editing: ImportantDate | "new" | null,
+  reminderDate?: Date,
+): DateFormValues {
   const date = editing && editing !== "new" ? editing : null;
   return {
     title: date?.title ?? "",
@@ -227,7 +314,10 @@ function formValues(editing: ImportantDate | "new" | null, reminderDate?: Date):
     includeYear: Boolean(date?.date.year),
     kind: date?.kind ?? "custom",
     repeatsAnnually: date?.repeatsAnnually ?? true,
-    reminderPreset: date && reminderDate ? getReminderPresetValue(date.date, reminderDate, date.repeatsAnnually) : "none",
+    reminderPreset:
+      date && reminderDate
+        ? getReminderPresetValue(date.date, reminderDate, date.repeatsAnnually)
+        : "none",
     notes: date?.notes ?? "",
   };
 }
@@ -235,12 +325,22 @@ function formValues(editing: ImportantDate | "new" | null, reminderDate?: Date):
 const inputClassName =
   "h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-ring/30";
 
-function Field({ children, error, label }: { children: React.ReactNode; error?: string; label: string }) {
+function Field({
+  children,
+  error,
+  label,
+}: {
+  children: React.ReactNode;
+  error?: string;
+  label: string;
+}) {
   return (
     <label className="block space-y-1.5">
       <span className="text-sm font-medium">{label}</span>
       {children}
-      {error ? <span className="block text-xs text-destructive">{error}</span> : null}
+      {error ? (
+        <span className="block text-xs text-destructive">{error}</span>
+      ) : null}
     </label>
   );
 }
@@ -262,14 +362,18 @@ async function replaceReminderForImportantDate(
     return;
   }
 
-  const remindAt = getReminderDate(values.date, Number(values.reminderPreset), values.repeatsAnnually);
+  const remindAt = getReminderDate(
+    values.date,
+    Number(values.reminderPreset),
+    values.repeatsAnnually,
+  );
 
   if (!remindAt) {
     return;
   }
 
   await remindersRepository.create(ownerId, {
-    title: `Remember ${values.title}`,
+    title: values.title,
     remindAt: Timestamp.fromDate(remindAt),
     status: "scheduled",
     personId: values.personId,
@@ -277,14 +381,30 @@ async function replaceReminderForImportantDate(
   });
 }
 
-async function deleteRemindersForImportantDate(ownerId: string, importantDateId: string) {
-  const reminders = await remindersRepository.listForImportantDate(ownerId, importantDateId);
-  await Promise.all(reminders.map((reminder) => remindersRepository.delete(ownerId, reminder.id)));
+async function deleteRemindersForImportantDate(
+  ownerId: string,
+  importantDateId: string,
+) {
+  const reminders = await remindersRepository.listForImportantDate(
+    ownerId,
+    importantDateId,
+  );
+  await Promise.all(
+    reminders.map((reminder) =>
+      remindersRepository.delete(ownerId, reminder.id),
+    ),
+  );
 }
 
-function getReminderDate(date: FlexibleDate, offsetDays: number, repeatsAnnually: boolean) {
+function getReminderDate(
+  date: FlexibleDate,
+  offsetDays: number,
+  repeatsAnnually: boolean,
+) {
   const today = startOfDay(new Date());
-  let occurrence = repeatsAnnually ? getNextAnnualOccurrence(date, today) : getOneTimeOccurrence(date, today);
+  let occurrence = repeatsAnnually
+    ? getNextAnnualOccurrence(date, today)
+    : getOneTimeOccurrence(date, today);
 
   if (!occurrence) {
     return null;
@@ -309,15 +429,23 @@ function getOneTimeOccurrence(date: FlexibleDate, from: Date) {
   return occurrence < startOfDay(from) ? null : occurrence;
 }
 
-function getReminderPresetValue(date: FlexibleDate, reminderDate: Date, repeatsAnnually: boolean): ReminderPresetValue {
-  const occurrence = repeatsAnnually ? getNextAnnualOccurrence(date, reminderDate) : getOneTimeOccurrence(date, reminderDate);
+function getReminderPresetValue(
+  date: FlexibleDate,
+  reminderDate: Date,
+  repeatsAnnually: boolean,
+): ReminderPresetValue {
+  const occurrence = repeatsAnnually
+    ? getNextAnnualOccurrence(date, reminderDate)
+    : getOneTimeOccurrence(date, reminderDate);
 
   if (!occurrence) {
     return "none";
   }
 
   const daysBefore = differenceInCalendarDays(occurrence, reminderDate);
-  return reminderPresetValues.includes(String(daysBefore) as ReminderPresetValue)
+  return reminderPresetValues.includes(
+    String(daysBefore) as ReminderPresetValue,
+  )
     ? (String(daysBefore) as ReminderPresetValue)
     : "none";
 }
