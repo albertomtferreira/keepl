@@ -349,14 +349,14 @@ async function loadExisting(ownerId: string) {
     interactions,
     reminders,
   ] = await Promise.all([
-    peopleRepository.list(ownerId),
-    groupsRepository.list(ownerId),
-    relationshipsRepository.list(ownerId),
-    importantDatesRepository.list(ownerId),
-    personNotesRepository.list(ownerId),
-    memoriesRepository.list(ownerId),
-    interactionsRepository.list(ownerId),
-    remindersRepository.list(ownerId),
+    peopleRepository.list(ownerId, { scanAll: true }),
+    groupsRepository.list(ownerId, { scanAll: true }),
+    relationshipsRepository.list(ownerId, { scanAll: true }),
+    importantDatesRepository.list(ownerId, { scanAll: true }),
+    personNotesRepository.list(ownerId, { scanAll: true }),
+    memoriesRepository.list(ownerId, { scanAll: true }),
+    interactionsRepository.list(ownerId, { scanAll: true }),
+    remindersRepository.list(ownerId, { scanAll: true }),
   ]);
 
   return {

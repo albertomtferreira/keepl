@@ -36,7 +36,12 @@ service cloud.firestore {
         'groups',
         'reminders'
       ] && ownsIncomingDocument();
-      allow read, delete: if collection in [
+      // Transactions must be able to check a destination before creating it.
+      // This grants no access to an existing record owned by someone else.
+      allow get: if isSignedIn()
+        && collection in ['people', 'relationships', 'importantDates', 'personNotes', 'memories', 'interactions', 'groups', 'reminders']
+        && (!exists(/databases/$(database)/documents/$(collection)/$(documentId)) || ownsExistingDocument());
+      allow list, delete: if collection in [
         'people',
         'relationships',
         'importantDates',

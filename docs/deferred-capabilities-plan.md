@@ -2,7 +2,7 @@
 
 This is the main source of truth for current status, priorities, release gates, and future work. The filename is retained so existing links keep working. The [original implementation plan](./implementation-plan.md) records the historical MVP milestones; it does not define the next work.
 
-Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3/H4 implementation decisions and local verification evidence are recorded in their stage sections.
+Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3/H4/H5 implementation decisions and local verification evidence are recorded in their stage sections.
 
 ## Status and Evidence
 
@@ -14,15 +14,15 @@ Use these statuses consistently:
 - **Verified:** acceptance criteria passed, with dated evidence recorded here.
 - **Blocked:** record the dependency and what will unblock it.
 
-The local assessment passed lint, TypeScript, 33 tests, and the production build. H3 authenticated localization checks are recorded below; complete write flows, deployed Firestore rules/indexes, provider permissions, and physical-device PWA behavior remain H5/H6 verification gates. No checked-in CI workflow, browser test suite, or Firestore emulator security suite was found.
+The local assessment passed lint, TypeScript, 33 tests, and the production build. H3 authenticated localization checks are recorded below; H5 records local authenticated write flows and emulator ownership checks; deployed Firestore rules/indexes, provider permissions, and physical-device PWA behavior remain H6 verification gates. The initial assessment found no checked-in CI workflow, browser test suite, or Firestore emulator security suite; H5 now supplies these with local verification evidence below.
 
 | Area                                                                                               | Current status                                                             | Remaining gate                       |
 | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
 | Core MVP: people, groups, relationships, notes, dates, memories, interactions, dashboard, settings | Implemented                                                                | Stages H4-H6                         |
-| Text search (FT 1)                                                                                 | Implemented; local matching and ranking, without AI language understanding | Stage H5                             |
-| Four-language support (FT 2)                                                                       | Verified locally for H3; release verification remains          | Stage H6                             |
+| Text search (FT 1)                                                                                 | Implemented; local matching and ranking, without AI language understanding | Stage H6                             |
+| Four-language support (FT 2)                                                                       | Verified locally for H3; release verification remains                      | Stage H6                             |
 | Relationship graph (FT 12)                                                                         | Implemented                                                                | Stage H6 device/accessibility checks |
-| Export/import (FT 14)                                                                              | Implemented; H1 local checks passed                                        | H5/H6 deployed verification           |
+| Export/import (FT 14)                                                                              | Implemented; H1 local checks passed                                        | H6 deployed verification          |
 | Google Photos (FT 9)                                                                               | Hardening required; picker, viewing, and download code exists              | Stages H2 and H6                     |
 | Reminders and PWA                                                                                  | Implemented foundation; notification delivery remains planned              | Stages H6 and R3                     |
 | Other feature tracks                                                                               | Planned                                                                    | Product stages below                 |
@@ -31,20 +31,20 @@ The local assessment passed lint, TypeScript, 33 tests, and the production build
 
 Complete H1-H6 before starting new provider or AI delivery work. H1 and H2 are the highest priorities. H3-H5 follow; H6 verifies the combined result. Stage R1 then addresses existing UX requests before integration expansion. Do one feature track at a time; prerequisites and acceptance evidence determine readiness, rather than a target date alone.
 
-| Stage | Scope                                                      | Status  | Dependency                           |
-| ----- | ---------------------------------------------------------- | ------- | ------------------------------------ |
-| H1    | Import validation, references, recovery                    | Implemented | Local checks below; deployed checks in H5/H6                       |
-| H2    | Google Photos credentials and account isolation            | Implemented | Before new provider integrations     |
-| H3    | Complete localization                                      | Verified locally (2026-10-25) | Before broader beta                  |
-| H4    | Data lifecycle and honest failure states                   | Implemented; local checks passed | Coordinate reference policy with H1  |
-| H5    | Automated checks, rules/index configuration, bounded reads | Planned | Cover H1-H4 fixes                    |
-| H6    | End-to-end beta and release verification                   | Planned | H1-H5                                |
-| R1    | Navigation, memory labels, remaining core UX               | Planned | H6                                   |
-| R2    | Calendar and selected Contacts import, then sync           | Planned | H6; H1/H2 patterns                   |
-| R3    | Smart reminders, then notification delivery                | Planned | H4/H5; reliable scheduling           |
-| R4    | AI entry, extraction, then semantic search                 | Planned | H1/H4/H5; privacy and cost decisions |
-| R5    | Additional providers and social integrations               | Planned | H2; provider feasibility review      |
-| R6    | Encrypted fields, then explicit sharing                    | Planned | Security designs; H1/H4/H5           |
+| Stage | Scope                                                      | Status                           | Dependency                                   |
+| ----- | ---------------------------------------------------------- | -------------------------------- | -------------------------------------------- |
+| H1    | Import validation, references, recovery                    | Implemented                      | Local checks below; deployed checks in H5/H6 |
+| H2    | Google Photos credentials and account isolation            | Implemented                      | Before new provider integrations             |
+| H3    | Complete localization                                      | Verified locally (2026-10-25)    | Before broader beta                          |
+| H4    | Data lifecycle and honest failure states                   | Implemented; local checks passed | Coordinate reference policy with H1          |
+| H5    | Automated checks, rules/index configuration, bounded reads | Implemented; local checks passed | Cover H1-H4 fixes                            |
+| H6    | End-to-end beta and release verification                   | Planned                          | H1-H5                                        |
+| R1    | Navigation, memory labels, remaining core UX               | Planned                          | H6                                           |
+| R2    | Calendar and selected Contacts import, then sync           | Planned                          | H6; H1/H2 patterns                           |
+| R3    | Smart reminders, then notification delivery                | Planned                          | H4/H5; reliable scheduling                   |
+| R4    | AI entry, extraction, then semantic search                 | Planned                          | H1/H4/H5; privacy and cost decisions         |
+| R5    | Additional providers and social integrations               | Planned                          | H2; provider feasibility review              |
+| R6    | Encrypted fields, then explicit sharing                    | Planned                          | Security designs; H1/H4/H5                   |
 
 ## Hardening Stages
 
@@ -115,7 +115,6 @@ H3 implementation decisions and evidence (2026-10-25, owner: Codex):
 - Evidence limits: these are non-destructive localization checks in the existing local dev session, not deployed beta verification. No valid domain create/update/delete or import was committed, and no Google consent/reconnect/successful media download was exercised; retain those H2/H5/H6 gates. Draft preservation was checked through validation, not live in-form language switching: the language selector is on Settings, so this pass does not establish draft persistence across route changes or cross-tab synchronization. No new code or automated tests were added during this verification; the passing H3 lint/typecheck/61-test/build results above remain the implementation evidence.
 - Non-blocking language polish observed: older export/import translations omit some accents (for example French `Telecharger` and Portuguese `copia`/`portatil`). These did not prevent the tested flows; a native-language copy review can refine them before release.
 
-
 ### H4: Data Lifecycle and Failure States
 
 Problem: [person deletion](../src/features/people/person-profile-client.tsx) removes only the person; related records can remain. Several loaders convert request failures into apparently empty sections.
@@ -137,13 +136,23 @@ H4 implementation decisions and local evidence (2026-10-25, owner: Codex):
 
 ### H5: Automated Assurance and Data Access
 
-- [ ] H5.1 Add CI for lint, typecheck, tests, and production build using documented, non-secret test configuration. Keep live credentials out of logs and test fixtures.
-- [ ] H5.2 Add reproducible Firebase rules/index configuration and emulator tests for unauthenticated access, cross-owner reads/writes, owner reassignment, and intended queries. Verify deployed configuration separately in H6.
-- [ ] H5.3 Add browser coverage for sign-in/route protection and people, relationships, memories, reminders, import preview/confirmation, locale changes, and account transitions. Use isolated test data; keep external OAuth/device checks as explicit manual evidence where automation is unsuitable.
-- [ ] H5.4 Measure representative small and large datasets, then bound list reads with pagination/cursors and appropriate indexes. Preserve search completeness: define a bounded local index or server search strategy rather than searching only the first list page. Record dataset size, reads, and latency before/after.
-- [ ] H5.5 Ensure automated regression coverage exercises the H1-H4 risks, including actual repository/rules behavior rather than only pure ownership helpers.
+- [x] H5.1 Add CI for lint, typecheck, tests, and production build using documented, non-secret test configuration. Keep live credentials out of logs and test fixtures.
+- [x] H5.2 Add reproducible Firebase rules/index configuration and emulator tests for unauthenticated access, cross-owner reads/writes, owner reassignment, and intended queries. Verify deployed configuration separately in H6.
+- [x] H5.3 Add browser coverage for sign-in/route protection and people, relationships, memories, reminders, import preview/confirmation, locale changes, and account transitions. Use isolated test data; keep external OAuth/device checks as explicit manual evidence where automation is unsuitable.
+- [x] H5.4 Measure representative small and large datasets, then bound list reads with pagination/cursors and appropriate indexes. Preserve search completeness: define a bounded local index or server search strategy rather than searching only the first list page. Record dataset size, reads, and latency before/after.
+- [x] H5.5 Ensure automated regression coverage exercises the H1-H4 risks, including actual repository/rules behavior rather than only pure ownership helpers.
 
 Exit gate: checks run reproducibly in CI; emulator security tests pass; common screens have documented read budgets and tested pagination/search behavior. No unmeasured scale claim is required to close a milestone.
+
+H5 implementation decisions and local evidence (2026-10-25, owner: Codex):
+
+- Reproducibility: [assurance workflow](../.github/workflows/assurance.yml), [Firebase configuration](../firebase.json), checked-in [indexes](../firestore.indexes.json), rules tests and a production-build Chromium suite. Fake public Firebase settings target only `demo-keepl`; emulator mode rejects real project IDs. No live OAuth account, service account, or secret is needed. Full commands, limits, query/index mappings and measurement methodology are in [automated assurance](./automated-assurance.md). Hosted CI execution and deployed rule/index availability are separate H6 evidence.
+- Actual rules/repository coverage found and fixed a create/import blocker: transactions read missing destinations before writing, but the old rules denied those reads. Authenticated missing-document checks now work; existing foreign-owner data, unauthenticated reads, unscoped queries and ownership reassignment remain denied. Emulator tests cover all eight domain collections, profiles, intended queries, real repository create/update/reference guards, import retry/atomic conflict behavior, timestamps, and cursor/index boundaries.
+- Rollout correction and verification (2026-10-25): the first real-project run exposed missing composite indexes on Home, Memories and Upcoming. Deployed the manifest to `keepl-9bfc7`, confirmed all 12 indexes READY, and verified all three routes load with the existing authenticated session against real Firestore data. Required indexes must be deployed and become READY before new query shapes run against any real project, including local development. The legacy groups ownerId/name index is preserved in the checked-in manifest. Emulator success alone is not index-readiness evidence.
+- Read strategy: each list request uses an owner predicate, a snapshot cursor, a stable document-ID tie break, and at most 100 documents. Normal local indexes stop at 2,000 matching records per collection and probe one additional document; overflow fails visibly rather than producing incomplete search. Search consumes every page within this explicit beta capacity. Backup, import duplicate review and lifecycle review explicitly scan all owned records in pages, preserving portability and deletion correctness above the normal screen capacity. Recent memories/interactions now use server ordering/limits; person memories/interactions filter on the server.
+- Measurement: synthetic 30- and 2,000-interaction owner datasets on the local Firestore emulator. Previous recent-list reads returned 30/2,000 documents in 31.1/313.9 ms; the limit-20 repository path returned 20/20 in 32.7/63.7 ms. Full local indexes still read every document, in 1/21 requests respectively. These are diagnostic emulator samples, not production latency or unlimited-scale claims. Per-screen budgets and reproduction commands are documented.
+- Browser evidence: real Firebase emulator sign-in and route protection; people, relationships, date/reminder and memory writes; import preview with backend evidence of no write until confirmation; deletion review preserving attached memories; locale switching/reloading in en/pt/fr/es; sign-out and a second account unable to list/read the first account's people. The suite also caught and fixed a duplicate login redirect that could override the user's next navigation after sign-in. Emulator-only long polling avoids browser streaming transport stalls; production Firebase transport is unchanged.
+- Local checks passed: `npm run lint`, `npm run typecheck`, `npm test` (75 tests), `npm run test:rules` (13 emulator tests), `npm run build:test` (production Next.js compilation with fake configuration), `npm run test:e2e` (1 Chromium scenario covering the flows above), and `npm run test:benchmark`. Existing H1-H4 unit regressions remain in CI. Real Google consent/Photos, deployed configuration and physical-device/PWA behavior remain H6 gates.
 
 ### H6: Beta and Release Verification
 
@@ -728,7 +737,7 @@ Acceptance criteria:
 
 ## Feature Track 14: Export and Import
 
-Status: Implemented (H1); deployed transaction/rules and browser verification in H5/H6
+Status: Implemented (H1); local H5 browser/emulator checks passed; deployed transaction/rules verification in H6
 
 Goal:
 

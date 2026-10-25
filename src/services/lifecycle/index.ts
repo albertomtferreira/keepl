@@ -39,7 +39,7 @@ export const lifecycleBackend: Backend = {
       await Promise.all(
         lifecycleCollections.map(async (key) => [
           key,
-          await collectionRepositories[key].list(ownerId),
+          await collectionRepositories[key].list(ownerId, { scanAll: true }),
         ]),
       ),
     ) as Snapshot;

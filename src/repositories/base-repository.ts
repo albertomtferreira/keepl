@@ -9,9 +9,12 @@ import {
   query,
   serverTimestamp,
   where,
+  documentId,
+  startAfter,
   type Firestore,
   type OrderByDirection,
   type QueryConstraint,
+  type QueryDocumentSnapshot,
   type WithFieldValue,
 } from "firebase/firestore";
 
@@ -26,6 +29,9 @@ import type { Entity, OwnedRecord, UserOwnedEntity } from "@/types";
 
 type OwnedEntity = Entity & OwnedRecord;
 
+export const READ_PAGE_SIZE = 100;
+export const LOCAL_INDEX_LIMIT = 2000;
+
 export type ListOptions<T extends OwnedEntity> = {
   orderBy?: {
     field: keyof FirestoreEntityData<T> & string;
@@ -33,6 +39,8 @@ export type ListOptions<T extends OwnedEntity> = {
   };
   limit?: number;
   constraints?: QueryConstraint[];
+  /** Explicit complete scans for backup/import/lifecycle operations only. */
+  scanAll?: boolean;
 };
 
 export type CreateInput<T extends UserOwnedEntity> = Omit<
@@ -63,7 +71,19 @@ export class OwnedFirestoreRepository<T extends UserOwnedEntity> {
     return record;
   }
 
-  async list(ownerId: string, options: ListOptions<T> = {}) {
+  async listPage(
+    ownerId: string,
+    options: ListOptions<T> = {},
+    cursor?: QueryDocumentSnapshot<T>,
+  ) {
+    if (!ownerId) throw new Error("owner-required");
+    const pageSize = options.limit ?? READ_PAGE_SIZE;
+    if (
+      !Number.isInteger(pageSize) ||
+      pageSize < 1 ||
+      pageSize > READ_PAGE_SIZE
+    )
+      throw new Error("invalid-page-size");
     const constraints: QueryConstraint[] = [where("ownerId", "==", ownerId)];
 
     if (options.orderBy) {
@@ -72,16 +92,57 @@ export class OwnedFirestoreRepository<T extends UserOwnedEntity> {
       );
     }
 
+    constraints.push(orderBy(documentId()));
+
     if (options.constraints) {
       constraints.push(...options.constraints);
     }
 
-    if (options.limit) {
-      constraints.push(limit(options.limit));
-    }
+    if (cursor) constraints.push(startAfter(cursor));
+    constraints.push(limit(pageSize));
 
     const snapshot = await getDocs(query(this.collectionRef(), ...constraints));
-    return snapshot.docs.map((document) => document.data());
+    return {
+      records: snapshot.docs.map((document) => document.data()),
+      cursor: snapshot.docs.at(-1),
+      hasMore: snapshot.size === pageSize,
+    };
+  }
+
+  // Complete, bounded local index. Never return a silently truncated search/export.
+  async list(ownerId: string, options: ListOptions<T> = {}) {
+    const budget = options.scanAll
+      ? Infinity
+      : (options.limit ?? LOCAL_INDEX_LIMIT);
+    if (
+      !options.scanAll &&
+      (!Number.isInteger(budget) || budget < 1 || budget > LOCAL_INDEX_LIMIT)
+    )
+      throw new Error("invalid-read-budget");
+    const records: T[] = [];
+    let cursor: QueryDocumentSnapshot<T> | undefined;
+    while (records.length < budget) {
+      const page = await this.listPage(
+        ownerId,
+        {
+          ...options,
+          limit: Math.min(READ_PAGE_SIZE, budget - records.length),
+        },
+        cursor,
+      );
+      records.push(...page.records);
+      cursor = page.cursor;
+      if (!page.hasMore) return records;
+    }
+    if (options.limit) return records;
+    const overflow = await this.listPage(
+      ownerId,
+      { ...options, limit: 1 },
+      cursor,
+    );
+    if (overflow.records.length)
+      throw new Error("local-index-capacity-exceeded");
+    return records;
   }
 
   async create(ownerId: string, data: CreateInput<T>, requestId?: string) {

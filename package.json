@@ -11,7 +11,11 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:rules": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only firestore \"tsx --test tests/firebase/*.test.ts\"",
+    "test:e2e": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only auth,firestore \"playwright test\"",
+    "build:test": "node scripts/test-env.mjs node_modules/next/dist/bin/next build --webpack",
+    "test:benchmark": "node scripts/test-env.mjs node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --project demo-keepl --only firestore \"tsx tests/firebase/benchmark.ts\""
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -32,6 +36,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -39,6 +45,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "firebase-tools": "^15.34.1",
     "prettier": "^3.9.6",
     "tailwindcss": "^4",
     "tsx": "^4.23.11",

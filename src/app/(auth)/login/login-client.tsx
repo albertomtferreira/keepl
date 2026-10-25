@@ -28,7 +28,6 @@ export function LoginClient() {
     setError(false);
     try {
       await signInWithGoogle();
-      router.replace(next);
     } catch {
       setError(true);
     } finally {
