@@ -5,7 +5,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { suggestedGroupNames } from "@/features/groups/group-suggestions";
@@ -79,6 +79,9 @@ export function PersonForm({ person }: PersonFormProps) {
       createPersonSchema({
         firstNameRequired: t("personForm", "validationFirstName"),
         validEmail: t("personForm", "validationEmail"),
+        socialPlatformRequired: t("socialProfiles", "platformRequired"),
+        socialContactRequired: t("socialProfiles", "contactRequired"),
+        socialUrlInvalid: t("socialProfiles", "invalidUrl"),
       }),
     [t],
   );
@@ -88,6 +91,7 @@ export function PersonForm({ person }: PersonFormProps) {
     handleSubmit,
     trigger,
     register,
+    control,
   } = useForm<PersonFormValues>({
     resolver: zodResolver(personSchema),
     values: {
@@ -103,8 +107,10 @@ export function PersonForm({ person }: PersonFormProps) {
         person?.emails?.find((email) => email.primary)?.value ??
         person?.emails?.[0]?.value ??
         "",
+      socialProfiles: person?.socialProfiles ?? [],
     },
   });
+  const socialProfiles = useFieldArray({ control, name: "socialProfiles" });
 
   useEffect(() => {
     if (isSubmitted) void trigger();
@@ -199,7 +205,11 @@ export function PersonForm({ person }: PersonFormProps) {
             ? [{ value: values.phone, primary: true }]
             : [],
           emails: values.email ? [{ value: values.email, primary: true }] : [],
-          socialProfiles: person?.socialProfiles ?? [],
+          socialProfiles: (values.socialProfiles ?? []).map((profile) => ({
+            platform: profile.platform,
+            ...(profile.handle ? { handle: profile.handle } : {}),
+            ...(profile.url ? { url: profile.url } : {}),
+          })),
           groupIds: selectedGroupIds,
           source: person?.source ?? "manual",
           archivedAt: person?.archivedAt ?? null,
@@ -295,6 +305,106 @@ export function PersonForm({ person }: PersonFormProps) {
             />
           </Field>
         </div>
+
+        <section
+          id="social-profiles"
+          className="scroll-mt-24 space-y-3 rounded-lg border bg-white p-4"
+          aria-labelledby="social-profiles-title"
+        >
+          <h2 id="social-profiles-title" className="text-sm font-medium">
+            {t("socialProfiles", "title")}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {t("socialProfiles", "hint")}
+          </p>
+          <datalist id="social-platform-suggestions">
+            {[
+              "Instagram",
+              "Facebook",
+              "LinkedIn",
+              "X",
+              "TikTok",
+              "Bluesky",
+              "Mastodon",
+              "GitHub",
+              "YouTube",
+            ].map((platform) => (
+              <option key={platform} value={platform} />
+            ))}
+          </datalist>
+          {!socialProfiles.fields.length ? (
+            <p className="text-sm text-muted-foreground">
+              {t("socialProfiles", "empty")}
+            </p>
+          ) : null}
+          {socialProfiles.fields.map((field, index) => (
+            <fieldset
+              key={field.id}
+              className="space-y-3 rounded-lg border p-3"
+            >
+              <legend className="px-1 text-sm font-medium">
+                {t("socialProfiles", "profileNumber", { count: index + 1 })}
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  label={t("socialProfiles", "platform")}
+                  error={errors.socialProfiles?.[index]?.platform?.message}
+                >
+                  <input
+                    className={inputClassName}
+                    list="social-platform-suggestions"
+                    autoComplete="off"
+                    {...register(`socialProfiles.${index}.platform`)}
+                  />
+                </Field>
+                <Field
+                  label={t("socialProfiles", "handle")}
+                  error={errors.socialProfiles?.[index]?.handle?.message}
+                >
+                  <input
+                    className={inputClassName}
+                    autoComplete="off"
+                    {...register(`socialProfiles.${index}.handle`)}
+                  />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field
+                    label={t("socialProfiles", "url")}
+                    error={errors.socialProfiles?.[index]?.url?.message}
+                  >
+                    <input
+                      className={inputClassName}
+                      inputMode="url"
+                      autoComplete="off"
+                      {...register(`socialProfiles.${index}.url`)}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={t("socialProfiles", "removeNumber", {
+                  count: index + 1,
+                })}
+                onClick={() => socialProfiles.remove(index)}
+              >
+                {t("socialProfiles", "remove")}
+              </Button>
+            </fieldset>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              socialProfiles.append({ platform: "", handle: "", url: "" })
+            }
+          >
+            {t("socialProfiles", "add")}
+          </Button>
+        </section>
 
         <div className="space-y-3 rounded-lg border bg-white p-4">
           <div>

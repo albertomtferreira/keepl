@@ -10,6 +10,8 @@ import { ReadFailure, settleReads } from "@/lib/async/settle";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { buildUpcomingItems } from "@/features/important-dates/upcoming-items";
+import { DateReminders } from "./date-reminders";
+import { useLocalDay } from "@/lib/dates/use-local-day";
 import {
   formatRelativeDateLabel,
   type UpcomingDateGroup,
@@ -38,7 +40,7 @@ export function UpcomingClient() {
   const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [today] = useState(() => new Date());
+  const today = useLocalDay();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -116,6 +118,7 @@ export function UpcomingClient() {
 
   return (
     <div className="space-y-5">
+      <DateReminders items={upcoming} />
       {reminders.length ? (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase text-muted-foreground">

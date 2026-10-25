@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 import { signIn } from "./helpers";
 import { createTranslator } from "../../src/lib/i18n/translate";
 
+// Keep provider requests intercepted by Playwright; a service worker can bypass
+// context.route and send the emulator's fake OAuth token to the real provider.
+test.use({ serviceWorkers: "block" });
+
 test("selected contact import, reviewed refresh, session disconnect and localized Settings entry", async ({
   page,
   context,
@@ -41,6 +45,10 @@ test("selected contact import, reviewed refresh, session disconnect and localize
                   resourceName: "people/test2",
                   names: [{ displayName: "Unselected contact" }],
                 },
+                ...Array.from({ length: 25 }, (_, index) => ({
+                  resourceName: `people/extra${index}`,
+                  names: [{ displayName: `Extra contact ${index}` }],
+                })),
               ],
             }
           : contact,
@@ -83,6 +91,18 @@ test("selected contact import, reviewed refresh, session disconnect and localize
       exact: true,
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Review Imported Google name",
+      exact: true,
+    }),
+  ).toBeInViewport();
+  await expect(
+    page.getByRole("heading", {
+      name: "Review Imported Google name",
+      exact: true,
+    }),
+  ).toBeFocused();
   await page
     .getByRole("button", { name: "Confirm and save this person", exact: true })
     .click();

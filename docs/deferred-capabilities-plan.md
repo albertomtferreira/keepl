@@ -217,6 +217,8 @@ Exit gate: permissions are progressive; duplicate calendar events and destructiv
 
 ### R3: Smart Reminders and Notifications
 
+Personal-trial addition (2026-10-25): [in-app date reminders](./in-app-reminders.md) now appear on Home and Upcoming exactly seven calendar days before and on the day of birthdays and important dates. They are derived from existing records, with no new portable data or background delivery. Smart suggestions, push/email delivery and notification history remain planned.
+
 Deliver FT 6 suggestions and user controls before notification transport. First define recurring scheduling, timezone/DST behavior, deduplication, dismiss/snooze/complete behavior, and source deletion. Then select delivery infrastructure and implement explicit opt-in, quiet periods, revocation, retries, and delivery status.
 
 Exit gate: suggestions become reminders only by user choice; scheduling is tested across timezone and recurrence boundaries; retries do not duplicate notifications; no relationship scoring is introduced.

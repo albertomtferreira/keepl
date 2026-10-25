@@ -525,5 +525,28 @@
     "googlePolicy": "Google API Services User Data Policy",
     "contactTitle": "Contact",
     "contactBody": "For privacy questions or data-deletion requests, contact the Keepl project maintainer at"
+  },
+  "dateReminders": {
+    "enabled": "In-app reminders enabled",
+    "settingsDetail": "Home and Upcoming show birthdays and important dates on the day and seven days before. Push and email notifications are not enabled.",
+    "title": "Reminders for today",
+    "description": "Birthdays and important dates appear here on the day and seven days before, using your device’s local date. These are in-app reminders."
+  },
+  "socialProfiles": {
+    "title": "Social profiles",
+    "hint": "Add a platform name and a username, a full profile link, or both. Custom platforms are welcome. This saves a reference without connecting to the social account.",
+    "empty": "No social profiles added yet.",
+    "profileNumber": "Social profile {count}",
+    "platform": "Platform",
+    "handle": "Username or handle",
+    "url": "Profile URL",
+    "add": "Add social profile",
+    "remove": "Remove",
+    "removeNumber": "Remove social profile {count}",
+    "manage": "Manage social profiles",
+    "newTab": "Opens in a new tab",
+    "platformRequired": "Enter a platform name",
+    "contactRequired": "Enter a username or profile URL",
+    "invalidUrl": "Use a complete http:// or https:// profile URL"
   }
 }

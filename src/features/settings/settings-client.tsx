@@ -150,10 +150,11 @@ export function SettingsClient() {
     {
       title: t("settings", "notifications"),
       icon: Bell,
-      status: permissionStatus(
-        t("settings", "notificationPermission"),
-        t("settings", "notificationPermissionDetail"),
-      ),
+      status: {
+        state: "connected",
+        label: t("dateReminders", "enabled"),
+        detail: t("dateReminders", "settingsDetail"),
+      },
     },
     {
       title: t("settings", "privacy"),

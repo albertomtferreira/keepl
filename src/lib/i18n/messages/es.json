@@ -525,5 +525,28 @@
     "googlePolicy": "Política de Datos de Usuario de los Servicios de API de Google",
     "contactTitle": "Contacto",
     "contactBody": "Para preguntas sobre privacidad o solicitudes de eliminación de datos, contacta con el responsable del proyecto Keepl en"
+  },
+  "dateReminders": {
+    "enabled": "Recordatorios en la aplicación activados",
+    "settingsDetail": "Inicio y Próximos muestran cumpleaños y fechas importantes el mismo día y siete días antes. Las notificaciones push y por correo no están activadas.",
+    "title": "Recordatorios de hoy",
+    "description": "Los cumpleaños y fechas importantes aparecen aquí el mismo día y siete días antes, según la fecha local de tu dispositivo. Estos recordatorios se muestran en la aplicación."
+  },
+  "socialProfiles": {
+    "title": "Perfiles sociales",
+    "hint": "Añade una plataforma y un nombre de usuario, un enlace completo al perfil o ambos. Puedes usar otras plataformas. Solo se guarda una referencia, sin conectar con la cuenta social.",
+    "empty": "Todavía no hay perfiles sociales.",
+    "profileNumber": "Perfil social {count}",
+    "platform": "Plataforma",
+    "handle": "Nombre de usuario",
+    "url": "URL del perfil",
+    "add": "Añadir perfil social",
+    "remove": "Eliminar",
+    "removeNumber": "Eliminar perfil social {count}",
+    "manage": "Gestionar perfiles sociales",
+    "newTab": "Se abre en una pestaña nueva",
+    "platformRequired": "Indica el nombre de la plataforma",
+    "contactRequired": "Indica un nombre de usuario o URL del perfil",
+    "invalidUrl": "Usa una URL completa con http:// o https://"
   }
 }

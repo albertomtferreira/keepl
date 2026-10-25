@@ -57,6 +57,7 @@ function ContactsSession({ ownerId }: { ownerId: string }) {
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState<"saved" | "unavailable" | "">("");
   const running = useRef(false);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
   let access: ContactsAccess | null = null;
   try {
     access = getContactsAccess(ownerId);
@@ -179,6 +180,12 @@ function ContactsSession({ ownerId }: { ownerId: string }) {
     setReviews(pending);
   }
   const review = reviews[0];
+  const reviewKey = review ? review.contact.resourceName : null;
+  useEffect(() => {
+    if (!reviewKey) return;
+    reviewHeading.current?.focus({ preventScroll: true });
+    reviewHeading.current?.scrollIntoView({ block: "start" });
+  }, [reviewKey]);
   const fieldLabel = (field: (typeof contactFields)[number]) =>
     t("contactsSync", field);
   function display(value: unknown): string {
@@ -268,7 +275,11 @@ function ContactsSession({ ownerId }: { ownerId: string }) {
 
       {review ? (
         <div className="space-y-4 rounded-lg border p-4">
-          <h2 className="font-semibold">
+          <h2
+            ref={reviewHeading}
+            tabIndex={-1}
+            className="scroll-mt-24 font-semibold"
+          >
             {t("contactsSync", "reviewTitle", {
               name: review.contact.values.displayName,
             })}

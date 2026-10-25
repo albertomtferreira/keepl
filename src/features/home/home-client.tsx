@@ -11,6 +11,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { buildUpcomingItems } from "@/features/important-dates/upcoming-items";
+import { DateReminders } from "@/features/important-dates/date-reminders";
+import { useLocalDay } from "@/lib/dates/use-local-day";
 import { formatLastInteraction } from "@/features/interactions/interaction-format";
 import { MemoryCard } from "@/features/memories/memory-card";
 import { LoadState } from "@/components/ui/load-state";
@@ -44,7 +46,7 @@ export function HomeClient() {
   const [people, setPeople] = useState<Person[]>([]);
   const [olderThanRecentCutoff, setOlderThanRecentCutoff] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [today] = useState(() => new Date());
+  const today = useLocalDay();
 
   useEffect(() => {
     if (!user) {
@@ -117,7 +119,7 @@ export function HomeClient() {
       .slice(0, 3);
   }, [interactions, olderThanRecentCutoff]);
   const upcomingItems = useMemo(
-    () => buildUpcomingItems(importantDates, people, today, locale).slice(0, 3),
+    () => buildUpcomingItems(importantDates, people, today, locale),
     [importantDates, people, today, locale],
   );
   const notesSummary = pinnedNotes.length
@@ -140,6 +142,7 @@ export function HomeClient() {
     );
   return (
     <div className="space-y-5">
+      <DateReminders items={upcomingItems} />
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           {
@@ -198,7 +201,7 @@ export function HomeClient() {
         </div>
         {upcomingItems.length ? (
           <div className="grid gap-2">
-            {upcomingItems.map((item) => (
+            {upcomingItems.slice(0, 3).map((item) => (
               <Link
                 key={item.id}
                 href={item.person ? `/people/${item.person.id}` : "/upcoming"}

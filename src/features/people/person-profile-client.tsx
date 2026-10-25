@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { safeSocialProfileUrl } from "./social-profile";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -325,15 +326,37 @@ export function PersonProfileClient({ personId }: { personId: string }) {
         <ProfileSection
           icon={Tags}
           title={t("personProfile", "socialProfiles")}
-          actionHref={`/people/${person.id}/edit`}
-          actionLabel={t("common", "edit")}
+          actionHref={`/people/${person.id}/edit#social-profiles`}
+          actionLabel={t("socialProfiles", "manage")}
         >
-          {person.socialProfiles?.map((profile) => (
+          {!person.socialProfiles?.length ? (
+            <p className="text-sm text-muted-foreground">
+              {t("socialProfiles", "empty")}
+            </p>
+          ) : null}
+          {person.socialProfiles?.map((profile, index) => (
             <p
-              key={`${profile.platform}-${profile.handle ?? profile.url}`}
-              className="text-sm"
+              key={`${index}-${profile.platform}`}
+              className="break-words text-sm"
             >
-              {profile.platform}: {profile.handle ?? profile.url}
+              {safeSocialProfileUrl(profile.url) ? (
+                <a
+                  href={safeSocialProfileUrl(profile.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-4"
+                >
+                  {profile.platform}: {profile.handle || profile.url}
+                  <span className="sr-only">
+                    {" "}
+                    — {t("socialProfiles", "newTab")}
+                  </span>
+                </a>
+              ) : (
+                <>
+                  {profile.platform}: {profile.handle || profile.url}
+                </>
+              )}
             </p>
           ))}
         </ProfileSection>

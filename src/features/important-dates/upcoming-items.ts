@@ -1,4 +1,5 @@
 import { createTranslator } from "@/lib/i18n/translate";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 import {
   buildUpcomingDates,
   formatFlexibleDate,
@@ -23,7 +24,18 @@ export function buildUpcomingItems(
   from: Date,
   locale?: Locale,
 ): UpcomingItem[] {
-  const dateItems = buildUpcomingDates(importantDates, people, from).map(
+  const activeDates = importantDates.filter(
+    (date) =>
+      !date.deletionPending &&
+      people.some(
+        (person) =>
+          person.id === date.personId &&
+          person.ownerId === date.ownerId &&
+          !person.archivedAt &&
+          !person.deletionPending,
+      ),
+  );
+  const dateItems = buildUpcomingDates(activeDates, people, from).map(
     (date) => ({
       id: date.importantDate.id,
       title: date.importantDate.title,
@@ -36,7 +48,7 @@ export function buildUpcomingItems(
   );
 
   const birthdayItems = people.flatMap((person) => {
-    if (!person.birthday) {
+    if (!person.birthday || person.archivedAt || person.deletionPending) {
       return [];
     }
 
@@ -46,9 +58,9 @@ export function buildUpcomingItems(
       return [];
     }
 
-    const daysUntil = Math.max(
-      0,
-      Math.ceil((nextOccurrence.getTime() - from.getTime()) / 86400000),
+    const daysUntil = differenceInCalendarDays(
+      nextOccurrence,
+      startOfDay(from),
     );
 
     return [
@@ -77,6 +89,17 @@ export function buildUpcomingItems(
       daysUntil: item.daysUntil,
       group: item.group,
     }));
+}
+
+/** Read-only reminders for active, owner-matched people; no notification writes. */
+export function buildDueDateReminders(items: UpcomingItem[]) {
+  return items.filter((item): item is UpcomingItem & { person: Person } =>
+    Boolean(
+      item.person &&
+      !item.person.archivedAt &&
+      (item.daysUntil === 0 || item.daysUntil === 7),
+    ),
+  );
 }
 
 function getUpcomingGroup(daysUntil: number): UpcomingDateGroup {

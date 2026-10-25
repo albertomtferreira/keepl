@@ -36,7 +36,14 @@ function fixture(): KeeplExportData {
         birthday: { precision: "month-day", month: 2, day: 29 },
         archivedAt: "2026-01-01T00:00:00.000Z",
         phoneNumbers: [{ value: "123", primary: true }],
-        socialProfiles: [{ platform: "custom", handle: "alex" }],
+        socialProfiles: [
+          {
+            platform: "custom",
+            handle: "alex",
+            url: "https://example.com/alex",
+          },
+          { platform: "Instagram", handle: "@alex" },
+        ],
       },
     ],
     relationships: [
@@ -195,6 +202,10 @@ it("round-trips every collection through export, preview, remapping and import w
       plan.records.map((row) => [row.collection, row.record]),
     );
     assert.deepEqual(byCollection.people.groupIds, [byCollection.groups.id]);
+    assert.deepEqual(
+      byCollection.people.socialProfiles,
+      data.collections.people[0].socialProfiles,
+    );
     assert.deepEqual(
       byCollection.people.googleContact,
       data.collections.people[0].googleContact,
