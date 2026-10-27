@@ -2,7 +2,7 @@
 
 This is the main source of truth for current status, priorities, release gates, and future work. The filename is retained so existing links keep working. The [original implementation plan](./implementation-plan.md) records the historical MVP milestones; it does not define the next work.
 
-Last reviewed: 2026-10-25. The initial assessment below informed the roadmap; H1/H2/H3/H4/H5 implementation decisions and local verification evidence are recorded in their stage sections.
+Last reviewed: 2026-10-27. The initial assessment below informed the roadmap; implementation decisions and dated verification evidence are recorded in their stage sections.
 
 ## Status and Evidence
 
@@ -160,7 +160,7 @@ H5 implementation decisions and local evidence (2026-10-25, owner: Codex):
 - [ ] H6.1 Verify environment setup, Firebase authorized domains, deployed rules/indexes, Google OAuth scopes/consent, and route configuration in the intended beta environment.
 - [ ] H6.2 Run the full journey: sign in, create people/groups, connect relationships, add notes/dates/reminders, create/edit a multi-person memory with Photos, search/view graph, export, preview/restore, archive/delete, sign out, and switch accounts.
 - [ ] H6.3 Verify mobile/desktop layouts, keyboard and screen-reader basics, all four locales, Android Chrome installation/offline fallback, and iOS Safari behavior. Check offline/sign-out transitions do not expose another account's cached content; distinguish an offline fallback from supported offline editing.
-- [ ] H6.4 Record dated results, environment/device details, remaining defects, and pass/fail outcomes in this document. Resolve release blockers and define accepted limitations explicitly.
+- [ ] H6.4 Record dated results, environment/device details, remaining defects, and pass/fail outcomes in this document. Resolve release blockers and define accepted limitations explicitly. Current results are recorded below; final provider/device/hosted-CI evidence remains pending.
 - [x] H6.5 Re-run lint, typecheck, tests, and production build after fixes; update setup instructions and feature statuses to match verified behavior.
 
 Exit gate: H1-H5 are closed with evidence; the beta journey passes; no unresolved data-loss, cross-account exposure, or critical-flow defects remain. This is the gate for broader release, not a claim that deployment is already verified.
@@ -189,12 +189,33 @@ Final local command results (2026-10-25): `npm run lint`, `npm run typecheck`, `
 
 Release blockers and remaining evidence:
 
-1. Publish the reviewed application build with real public Firebase configuration (never `.next-test` or emulator flags), then run the deployment gate against the selected beta origin and repeat the hosted authenticated journey. The existing Vercel candidate is still an older artifact.
+1. Repeat the full authenticated journey on the hosted beta with designated test accounts. The previously stale hosted manifest/icons/worker blocker is resolved by the 2026-10-27 read-only gate below; this does not prove the complete hosted authenticated journey or exact application revision.
 2. Complete the real Photos scenario with an explicitly chosen test photo: select, attach to a new multi-person verification memory, save, edit, reopen, view, download, disconnect, reconnect/reselect; then exercise denied/cancelled consent, expiry/revocation and account switching. Record browser/account setup and outcomes without recording credentials or personal media.
 3. On actual Android Chrome and iOS Safari, record device/OS/browser versions and install/standalone/offline/sign-out/account-transition outcomes. Run keyboard and screen-reader traversal of navigation, forms, validation, graph list alternative and confirmations. Simulated device settings do not close this gate.
 4. Run hosted CI for the final change and attach the dated result. H1-H5 implementation evidence remains valid within its stated scope; remaining H2 provider checks are carried here rather than silently checked off.
 
 Documented beta boundaries: no supported offline editing or notification delivery; static metadata/manifest stay English under the H3 locale strategy; local search is complete up to 2,000 matching records per collection and fails visibly above that capacity, while explicit portability/lifecycle scans remain complete. These boundaries do not waive the unresolved release checks above. H6 is not closed and broader release is not approved by this record.
+
+H6 follow-up verification (2026-10-27, owner: Codex):
+
+- Revision under test: `179546c0cd4a0a61543ed2c6c1765cdc6dfd424d`, Windows, Node 22.16.0, Java Temurin 25.0.2. Automated writes use isolated `demo-keepl` emulators, not live user records.
+- PASS: `npm run verify:firebase -- keepl-9bfc7 https://keepl-iota.vercel.app` exited 0. HTTPS, authorized beta domain, enabled Google sign-in, exact checked-in rules, all 12 READY indexes, login/offline routes, canonical manifest, legacy redirect, PNG install icons and worker policy marker passed. No deployment or real-data mutation was needed. This supersedes the historical hosted-artifact failure above; OAuth consent/scopes and device behavior are still unverified.
+- CI defect found and fixed locally: GitHub's default branch is `master`, but Assurance listened only to pushes on `main`. Added `master` while retaining `main`, plus `workflow_dispatch` for explicit reruns. GitHub Actions is enabled and the workflow is active, but both the workflow run history and current revision's check runs are empty. Publish this workflow change and record a successful Assurance run URL before closing the hosted-CI gate; local tests cannot substitute for it.
+- The user explicitly requested that real Photos and physical-device/screen-reader evidence remain pending on 2026-10-27. These gates are deferred, not passed or waived.
+- Browser-suite maintenance: the initial rerun passed 10/14 scenarios. Both reminder failures came from a stale expectation that the now-opt-in second reminder was enabled by default; the scenario now enables it through Settings and fixes the browser clock at midday to avoid date/time-dependent outcomes. WebKit exposed delayed Firestore acknowledgement after repeated reloads and a contrast scan during a button opacity transition. The locale test now allows 45 seconds for the exact persisted preference (rather than 15), retaining reload/translated-UI assertions; the isolated full WebKit journey passed in 35.6 seconds. The accessibility test waits for control animations to settle; no accessibility assertions were removed or weakened. The reminder guide now documents the actual category/offset/time defaults and account-scoped device preferences.
+- Final local results: `npm run lint`, `npm run typecheck`, `npm test` (89 passed), `npm run test:rules` (16 passed), `npm run build:test`, `npm run test:e2e` (14/14 passed across desktop Chromium and mobile WebKit in 2.9 minutes), and `npm run build` (real configured production build) passed. Lint/typecheck were repeated after the test fixes. The final complete WebKit core journey, including four saved/reloaded locale preferences, passed in 27.2 seconds. Workflow formatting and `git diff --check` passed. H6.5 remains complete; external gates below remain open.
+
+Remaining manual evidence must use the updated HTTPS beta and synthetic records. Record date, application revision/deployment, browser/OS/device versions, scenario, PASS/FAIL, cleanup and defect details in this section. Use account aliases rather than emails; do not record tokens or personal media.
+
+| Pending gate | Required verification record |
+| --- | --- |
+| H6.1 provider setup | Confirm the beta Firebase/OAuth project, Google Photos Picker scope and consent/test-user configuration; demonstrate successful incremental consent and denied consent without breaking ordinary sign-in. |
+| H6.2 hosted journey / H2.4-H2.5 | With two designated Keepl test accounts and an explicitly chosen test photo, perform the full H6.2 journey and Photos select/save/edit/reopen/view/download/disconnect/reconnect/reselection. Test blocked/cancelled popup, expiry/revocation, unavailable references and account switching. Confirm retained records, localized recovery, no cross-account state and reviewed synthetic-record cleanup. |
+| H6.3 physical devices | On actual Android Chrome and iOS Safari, test install/standalone launch where supported, rotation, four locales, offline fallback, offline sign-out, relaunch, second-account isolation and replacement of an older worker. Confirm offline editors are unavailable. Record platform-specific limitations explicitly. |
+| H6.3 assistive technology | Use keyboard and NVDA/VoiceOver for navigation, forms, validation, graph list alternative and import/delete confirmations. Record focus order, control names, announced errors and any trapping or inaccessible actions. |
+| H6.4 hosted CI | Record the final revision and successful Assurance run URL after the workflow fix is published. Resolve failures before marking this gate complete. |
+
+H6.1-H6.4 remain unchecked because their remaining external evidence has not been demonstrated. The passing deployment checks resolve the old asset defect only; they do not waive these gates.
 
 ## Product Stages After Hardening
 

@@ -219,14 +219,19 @@ test("protected routes, sign-in, writes, import confirmation, locales and accoun
     await page.locator("#language").press("Tab");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     // Verify the actual saved preference, not a transient confirmation label.
+    // Reloaded WebKit emulator long-poll connections can delay acknowledgement
+    // beyond the normal UI timeout; still require the exact persisted value.
     await expect
-      .poll(async () => {
-        const response = await request.get(
-          `http://127.0.0.1:8080/v1/projects/demo-keepl/databases/(default)/documents/users/${ownerId}`,
-          { headers: { Authorization: "Bearer owner" } },
-        );
-        return (await response.json()).fields?.locale?.stringValue;
-      })
+      .poll(
+        async () => {
+          const response = await request.get(
+            `http://127.0.0.1:8080/v1/projects/demo-keepl/databases/(default)/documents/users/${ownerId}`,
+            { headers: { Authorization: "Bearer owner" } },
+          );
+          return (await response.json()).fields?.locale?.stringValue;
+        },
+        { timeout: 45000 },
+      )
       .toBe(locale);
     await page.reload();
     await expect(page.locator("#language")).toHaveValue(locale);

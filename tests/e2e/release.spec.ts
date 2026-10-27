@@ -34,6 +34,13 @@ test("four-locale mobile/desktop layout and accessible login/offline shell", asy
       await expect(button).toBeEnabled();
       await button.focus();
       await expect(button).toBeFocused();
+      // Auth readiness and focus change opacity/colors through CSS transitions.
+      // Audit the settled control, rather than an intermediate animation frame.
+      await button.evaluate(async (element) => {
+        await Promise.all(
+          element.getAnimations().map((animation) => animation.finished),
+        );
+      });
       await page.keyboard.press("Shift+Tab");
       await page.keyboard.press("Tab");
       await expect(button).toBeFocused();

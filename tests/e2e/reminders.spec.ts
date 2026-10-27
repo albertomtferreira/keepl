@@ -13,6 +13,14 @@ test("Home and Upcoming show in-app reminders on the day and seven days before",
   );
   await page.goto("/login");
   await signIn(page, `reminders-${Date.now()}`);
+  // The second reminder is opt-in; configure it through the actual Settings UI.
+  await page.clock.setFixedTime(new Date("2026-10-27T12:00:00Z"));
+  await page.locator('a[href="/settings"]:visible').first().click();
+  const birthdaySettings = page.getByRole("group", {
+    name: "Birthday",
+    exact: true,
+  });
+  await birthdaySettings.getByRole("checkbox").nth(1).check();
   const birthdays = await page.evaluate(() =>
     [0, 6, 7, 8].map((offset) => {
       const date = new Date();

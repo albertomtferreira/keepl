@@ -19,6 +19,8 @@ On Linux, use `npx playwright install --with-deps chromium webkit`. Run emulator
 
 [CI](../.github/workflows/assurance.yml) runs lint, typecheck, all existing H1-H4 unit regressions, emulator tests, production compilation with fake configuration, and Chromium/mobile-WebKit flows. Failure traces contain only isolated test data. Firebase popup bootstrapping loads the public Google API JavaScript; no live OAuth flow or account is used. Optional emulator widget font/style CDNs are blocked. Emulator denial logs are expected assertions, not failed tests. External Google consent, Photos media delivery, installed PWA/device behavior, and deployed indexes/rules remain H6 checks. CI configuration is implemented locally; a hosted CI run is separate evidence.
 
+The workflow accepts pull requests, pushes to `master` (the current default branch) or `main`, and manual dispatch. After publishing the workflow, use GitHub Actions → Assurance → Run workflow, or `gh workflow run assurance.yml --ref master`. Record the successful run URL and tested revision under H6. On 2026-10-27, the previously `main`-only trigger was corrected locally; GitHub reported no existing Assurance runs or check runs for the tested revision.
+
 ## Rules and indexes
 
 [firebase.json](../firebase.json) binds the checked-in [rules](../firestore.rules) and [indexes](../firestore.indexes.json). Deployment is an explicit H6/release operation, using a deliberately chosen project:

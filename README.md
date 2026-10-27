@@ -80,7 +80,7 @@ The PWA caches static assets and a generic offline page. Saved records and provi
 ## Project Status and Roadmap
 
 The core MVP is implemented, along with text search, four-language infrastructure,
-relationship graphs, export/import, and Google Photos integration. H1-H5 hardening is implemented with local evidence. H6 adds release checks and PWA/accessibility fixes; the broader-release gate remains open for hosted rollout, real Photos consent/media, physical devices and assistive-technology evidence.
+relationship graphs, export/import, and Google Photos integration. H1-H5 hardening is implemented with local evidence. The hosted Firebase/PWA deployment gate passed on 2026-10-27. H6 remains open for the hosted authenticated journey, real Photos consent/media, physical devices, assistive technology and a successful hosted CI run.
 
 The [Keepl roadmap](docs/deferred-capabilities-plan.md) is the main source of truth
 for current status, staged work, dependencies, and release gates. It distinguishes
