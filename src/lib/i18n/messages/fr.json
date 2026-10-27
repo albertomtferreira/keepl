@@ -528,9 +528,9 @@
   },
   "dateReminders": {
     "enabled": "Rappels dans l’application activés",
-    "settingsDetail": "L’accueil et les événements à venir affichent les anniversaires et dates importantes le jour même et sept jours avant. Les notifications push et par e-mail ne sont pas activées.",
+    "settingsDetail": "Les rappels dans l'application apparaissent après l'heure choisie lorsque Keepl est ouvert. Ces réglages concernent ce navigateur et ce compte.",
     "title": "Rappels du jour",
-    "description": "Les anniversaires et dates importantes apparaissent ici le jour même et sept jours avant, selon la date locale de votre appareil. Ces rappels sont affichés dans l’application."
+    "description": "Rappels correspondant à vos horaires."
   },
   "socialProfiles": {
     "title": "Profils sociaux",
@@ -548,5 +548,20 @@
     "platformRequired": "Indiquez une plateforme",
     "contactRequired": "Indiquez un nom d’utilisateur ou une URL de profil",
     "invalidUrl": "Utilisez une URL complète avec http:// ou https://"
+  },
+  "reminderSettings": {
+    "title": "Horaires des rappels",
+    "detail": "Les rappels dans l'application apparaissent après l'heure choisie lorsque Keepl est ouvert. Ces réglages concernent ce navigateur et ce compte.",
+    "timezone": "Fuseau horaire : {timezone}",
+    "first": "Premier rappel",
+    "second": "Deuxième rappel",
+    "enabled": "Activé",
+    "day0": "Le jour même",
+    "day1": "1 jour avant",
+    "day3": "3 jours avant",
+    "day7": "1 semaine avant",
+    "time": "Heure",
+    "error": "Impossible d'enregistrer les réglages. Réessayez.",
+    "description": "Rappels correspondant à vos horaires."
   }
 }

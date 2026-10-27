@@ -1,3 +1,7 @@
+import {
+  defaultReminderSettings,
+  type ReminderSettings,
+} from "./reminder-settings";
 import { createTranslator } from "@/lib/i18n/translate";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import {
@@ -12,6 +16,7 @@ import type { Locale } from "@/types/i18n";
 export type UpcomingItem = {
   id: string;
   title: string;
+  kind?: ImportantDate["kind"];
   dateLabel: string;
   person?: Person;
   daysUntil: number;
@@ -38,6 +43,7 @@ export function buildUpcomingItems(
   const dateItems = buildUpcomingDates(activeDates, people, from).map(
     (date) => ({
       id: date.importantDate.id,
+      kind: date.importantDate.kind,
       title: date.importantDate.title,
       dateLabel: formatFlexibleDate(date.importantDate.date, locale),
       person: date.person,
@@ -66,6 +72,7 @@ export function buildUpcomingItems(
     return [
       {
         id: `person-birthday-${person.id}`,
+        kind: "birthday" as const,
         title: createTranslator(locale ?? "en")("personProfile", "birthday"),
         dateLabel: formatFlexibleDate(person.birthday, locale),
         person,
@@ -83,6 +90,7 @@ export function buildUpcomingItems(
     )
     .map((item) => ({
       id: item.id,
+      kind: item.kind,
       title: item.title,
       dateLabel: item.dateLabel,
       person: item.person,
@@ -92,12 +100,23 @@ export function buildUpcomingItems(
 }
 
 /** Read-only reminders for active, owner-matched people; no notification writes. */
-export function buildDueDateReminders(items: UpcomingItem[]) {
+export function buildDueDateReminders(
+  items: UpcomingItem[],
+  settings: ReminderSettings = defaultReminderSettings,
+  now: Date = new Date(),
+) {
   return items.filter((item): item is UpcomingItem & { person: Person } =>
     Boolean(
       item.person &&
       !item.person.archivedAt &&
-      (item.daysUntil === 0 || item.daysUntil === 7),
+      settings[item.kind ?? "custom"].some((rule) => {
+        const [hour, minute] = rule.time.split(":").map(Number);
+        return (
+          rule.enabled &&
+          item.daysUntil === rule.daysBefore &&
+          now.getHours() * 60 + now.getMinutes() >= hour * 60 + minute
+        );
+      }),
     ),
   );
 }

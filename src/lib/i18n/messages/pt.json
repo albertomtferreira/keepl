@@ -528,9 +528,9 @@
   },
   "dateReminders": {
     "enabled": "Lembretes na aplicação ativos",
-    "settingsDetail": "O Início e Próximos mostram aniversários e datas importantes no próprio dia e sete dias antes. As notificações push e por email não estão ativas.",
+    "settingsDetail": "Os lembretes na aplicação aparecem após a hora selecionada enquanto o Keepl está aberto. As definições aplicam-se a este navegador e conta.",
     "title": "Lembretes de hoje",
-    "description": "Os aniversários e datas importantes aparecem aqui no próprio dia e sete dias antes, segundo a data local do dispositivo. Estes lembretes são apresentados na aplicação."
+    "description": "Lembretes de acordo com o horário selecionado."
   },
   "socialProfiles": {
     "title": "Perfis sociais",
@@ -548,5 +548,20 @@
     "platformRequired": "Indique o nome da plataforma",
     "contactRequired": "Indique um nome de utilizador ou URL do perfil",
     "invalidUrl": "Utilize um URL completo com http:// ou https://"
+  },
+  "reminderSettings": {
+    "title": "Horários dos lembretes",
+    "detail": "Os lembretes na aplicação aparecem após a hora selecionada enquanto o Keepl está aberto. As definições aplicam-se a este navegador e conta.",
+    "timezone": "Fuso horário: {timezone}",
+    "first": "Primeiro lembrete",
+    "second": "Segundo lembrete",
+    "enabled": "Ativado",
+    "day0": "No próprio dia",
+    "day1": "1 dia antes",
+    "day3": "3 dias antes",
+    "day7": "1 semana antes",
+    "time": "Hora",
+    "error": "Não foi possível guardar as definições. Tente novamente.",
+    "description": "Lembretes de acordo com o horário selecionado."
   }
 }

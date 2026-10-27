@@ -528,9 +528,9 @@
   },
   "dateReminders": {
     "enabled": "Recordatorios en la aplicación activados",
-    "settingsDetail": "Inicio y Próximos muestran cumpleaños y fechas importantes el mismo día y siete días antes. Las notificaciones push y por correo no están activadas.",
+    "settingsDetail": "Los recordatorios en la aplicación aparecen después de la hora elegida mientras Keepl está abierto. Los ajustes se aplican a este navegador y cuenta.",
     "title": "Recordatorios de hoy",
-    "description": "Los cumpleaños y fechas importantes aparecen aquí el mismo día y siete días antes, según la fecha local de tu dispositivo. Estos recordatorios se muestran en la aplicación."
+    "description": "Recordatorios según el horario seleccionado."
   },
   "socialProfiles": {
     "title": "Perfiles sociales",
@@ -548,5 +548,20 @@
     "platformRequired": "Indica el nombre de la plataforma",
     "contactRequired": "Indica un nombre de usuario o URL del perfil",
     "invalidUrl": "Usa una URL completa con http:// o https://"
+  },
+  "reminderSettings": {
+    "title": "Horarios de recordatorios",
+    "detail": "Los recordatorios en la aplicación aparecen después de la hora elegida mientras Keepl está abierto. Los ajustes se aplican a este navegador y cuenta.",
+    "timezone": "Zona horaria: {timezone}",
+    "first": "Primer recordatorio",
+    "second": "Segundo recordatorio",
+    "enabled": "Activado",
+    "day0": "El mismo día",
+    "day1": "1 día antes",
+    "day3": "3 días antes",
+    "day7": "1 semana antes",
+    "time": "Hora",
+    "error": "No se pudieron guardar los ajustes. Inténtalo de nuevo.",
+    "description": "Recordatorios según el horario seleccionado."
   }
 }

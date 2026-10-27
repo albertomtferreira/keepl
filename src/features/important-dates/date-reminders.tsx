@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useReminderSettings } from "./use-reminder-settings";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -8,7 +10,18 @@ import { buildDueDateReminders, type UpcomingItem } from "./upcoming-items";
 
 export function DateReminders({ items }: { items: UpcomingItem[] }) {
   const { t, locale } = useI18n();
-  const reminders = buildDueDateReminders(items);
+  const { settings } = useReminderSettings();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const initial = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 15000);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(timer);
+    };
+  }, []);
+  const reminders = now ? buildDueDateReminders(items, settings, now) : [];
   if (!reminders.length) return null;
   return (
     <section

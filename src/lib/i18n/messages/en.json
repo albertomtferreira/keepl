@@ -528,9 +528,9 @@
   },
   "dateReminders": {
     "enabled": "In-app reminders enabled",
-    "settingsDetail": "Home and Upcoming show birthdays and important dates on the day and seven days before. Push and email notifications are not enabled.",
+    "settingsDetail": "In-app reminders appear after the selected time while Keepl is open. Settings apply to this browser and account.",
     "title": "Reminders for today",
-    "description": "Birthdays and important dates appear here on the day and seven days before, using your device’s local date. These are in-app reminders."
+    "description": "Reminders matching your selected schedule."
   },
   "socialProfiles": {
     "title": "Social profiles",
@@ -548,5 +548,20 @@
     "platformRequired": "Enter a platform name",
     "contactRequired": "Enter a username or profile URL",
     "invalidUrl": "Use a complete http:// or https:// profile URL"
+  },
+  "reminderSettings": {
+    "title": "Reminder schedules",
+    "detail": "In-app reminders appear after the selected time while Keepl is open. Settings apply to this browser and account.",
+    "timezone": "Timezone: {timezone}",
+    "first": "First reminder",
+    "second": "Second reminder",
+    "enabled": "Enabled",
+    "day0": "On the day",
+    "day1": "1 day before",
+    "day3": "3 days before",
+    "day7": "1 week before",
+    "time": "Time",
+    "error": "Could not save these settings. Please try again.",
+    "description": "Reminders matching your selected schedule."
   }
 }

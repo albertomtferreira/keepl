@@ -1,8 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Timestamp } from "firebase/firestore";
-import { buildDueDateReminders, buildUpcomingItems } from "./upcoming-items";
+import {
+  buildDueDateReminders as dueReminders,
+  buildUpcomingItems,
+} from "./upcoming-items";
 import type { ImportantDate, Person } from "@/types";
+
+import {
+  defaultReminderSettings,
+  reminderSettingsSchema,
+} from "./reminder-settings";
+const legacySettings = structuredClone(defaultReminderSettings);
+for (const rules of Object.values(legacySettings)) {
+  rules[0].time = "00:00";
+  rules[1].enabled = true;
+  rules[1].time = "00:00";
+}
+const buildDueDateReminders = (items: Parameters<typeof dueReminders>[0]) =>
+  dueReminders(items, legacySettings, new Date(2026, 0, 1, 12));
 
 const stamp = Timestamp.fromMillis(0);
 const base = { ownerId: "owner", createdAt: stamp, updatedAt: stamp };
@@ -109,4 +125,34 @@ test("seven-day reminders survive the London daylight-saving transition", () => 
     if (previous === undefined) delete process.env.TZ;
     else process.env.TZ = previous;
   }
+});
+
+test("selected category, offsets and independent times control visibility", () => {
+  const now = new Date(2026, 9, 25, 7, 59);
+  const items = buildUpcomingItems(
+    [],
+    [person("today", 10, 25), person("tomorrow", 10, 26)],
+    now,
+  );
+  const settings = structuredClone(defaultReminderSettings);
+  assert.equal(dueReminders(items, settings, now).length, 0);
+  now.setHours(8, 0);
+  assert.deepEqual(
+    dueReminders(items, settings, now).map((i) => i.person.id),
+    ["today"],
+  );
+  settings.birthday[1] = { enabled: true, daysBefore: 1, time: "09:30" };
+  assert.equal(dueReminders(items, settings, now).length, 1);
+  now.setHours(9, 30);
+  assert.equal(dueReminders(items, settings, now).length, 2);
+  settings.birthday[0].enabled = false;
+  settings.birthday[1].enabled = false;
+  assert.equal(dueReminders(items, settings, now).length, 0);
+  assert.equal(
+    reminderSettingsSchema.safeParse({
+      ...settings,
+      birthday: [{ enabled: true, daysBefore: 2, time: "25:00" }],
+    }).success,
+    false,
+  );
 });

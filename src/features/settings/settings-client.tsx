@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { LifecycleReview } from "@/features/lifecycle/lifecycle-review";
+import { ReminderSettingsPanel } from "@/features/important-dates/reminder-settings-panel";
 import { LanguageSettings } from "@/features/localization/language-settings";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -222,6 +223,7 @@ export function SettingsClient() {
       </section>
 
       <LanguageSettings />
+      <ReminderSettingsPanel />
       <Link
         href="/privacy"
         className="inline-block text-sm underline underline-offset-4"
