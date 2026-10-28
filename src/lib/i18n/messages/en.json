@@ -563,5 +563,14 @@
     "time": "Time",
     "error": "Could not save these settings. Please try again.",
     "description": "Reminders matching your selected schedule."
+  },
+  "datePicker": {
+    "day": "Day",
+    "month": "Month",
+    "selectMonth": "Select month",
+    "includeYear": "Include year",
+    "year": "Year",
+    "hint": "Leave the year unchecked if it is unknown.",
+    "invalidDate": "Enter a valid date"
   }
 }

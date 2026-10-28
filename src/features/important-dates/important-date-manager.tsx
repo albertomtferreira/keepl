@@ -10,10 +10,11 @@ import {
 import { Timestamp } from "firebase/firestore";
 import { CalendarPlus, Pencil, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useWatch, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { createDateSchema, reminderPresetValues } from "./validation";
 
+import { FlexibleDatePicker } from "@/components/ui/flexible-date-picker";
 import { Button } from "@/components/ui/button";
 import { useMutation, MutationError } from "@/lib/async/use-mutation";
 import { LoadState } from "@/components/ui/load-state";
@@ -62,6 +63,8 @@ export function ImportantDateManager({
     handleSubmit,
     trigger,
     register,
+    control,
+    setValue,
     reset,
   } = useForm<DateFormValues>({
     resolver: zodResolver(
@@ -72,6 +75,8 @@ export function ImportantDateManager({
     ),
     values: formValues(editing),
   });
+
+  const includeYear = useWatch({ control, name: "includeYear" });
 
   useEffect(
     () => () => {
@@ -207,7 +212,7 @@ export function ImportantDateManager({
                 <p className="text-sm text-muted-foreground">
                   {formatFlexibleDate(date.date, locale)}
                   {daysUntil !== null
-                    ? ` · ${formatRelativeDateLabel(daysUntil, locale)}`
+                    ? ` Â· ${formatRelativeDateLabel(daysUntil, locale)}`
                     : ""}
                 </p>
                 {date.notes ? (
@@ -251,16 +256,26 @@ export function ImportantDateManager({
             <input className={inputClassName} {...register("title")} />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              label={t("importantDates", "date")}
-              error={errors.date?.message}
-            >
-              <input
-                className={inputClassName}
-                type="date"
-                {...register("date")}
-              />
-            </Field>
+            <Controller
+              control={control}
+              name="date"
+              render={({ field }) => (
+                <FlexibleDatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  includeYear={includeYear}
+                  onYearChange={(value) =>
+                    setValue("includeYear", value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  label={t("importantDates", "date")}
+                  error={errors.date?.message}
+                  required
+                />
+              )}
+            />
             <Field
               label={t("importantDates", "kind")}
               error={errors.kind?.message}
@@ -279,10 +294,6 @@ export function ImportantDateManager({
               </select>
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" {...register("includeYear")} />
-            {t("importantDates", "includeYear")}
-          </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...register("repeatsAnnually")} />
             {t("importantDates", "repeatsAnnually")}

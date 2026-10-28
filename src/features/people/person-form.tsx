@@ -5,8 +5,9 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useWatch, useFieldArray, useForm } from "react-hook-form";
 
+import { FlexibleDatePicker } from "@/components/ui/flexible-date-picker";
 import { Button } from "@/components/ui/button";
 import { suggestedGroupNames } from "@/features/groups/group-suggestions";
 import {
@@ -78,6 +79,7 @@ export function PersonForm({ person }: PersonFormProps) {
     () =>
       createPersonSchema({
         firstNameRequired: t("personForm", "validationFirstName"),
+        validBirthday: t("datePicker", "invalidDate"),
         validEmail: t("personForm", "validationEmail"),
         socialPlatformRequired: t("socialProfiles", "platformRequired"),
         socialContactRequired: t("socialProfiles", "contactRequired"),
@@ -92,6 +94,7 @@ export function PersonForm({ person }: PersonFormProps) {
     trigger,
     register,
     control,
+    setValue,
   } = useForm<PersonFormValues>({
     resolver: zodResolver(personSchema),
     values: {
@@ -99,6 +102,7 @@ export function PersonForm({ person }: PersonFormProps) {
       lastName: person?.lastName ?? "",
       nickname: person?.nickname ?? "",
       birthday: birthdayInputValue(person?.birthday),
+      includeBirthdayYear: Boolean(person?.birthday?.year),
       phone:
         person?.phoneNumbers?.find((phone) => phone.primary)?.value ??
         person?.phoneNumbers?.[0]?.value ??
@@ -109,6 +113,10 @@ export function PersonForm({ person }: PersonFormProps) {
         "",
       socialProfiles: person?.socialProfiles ?? [],
     },
+  });
+  const includeBirthdayYear = useWatch({
+    control,
+    name: "includeBirthdayYear",
   });
   const socialProfiles = useFieldArray({ control, name: "socialProfiles" });
 
@@ -191,7 +199,12 @@ export function PersonForm({ person }: PersonFormProps) {
           ...(values.lastName ? { lastName: values.lastName } : {}),
           ...(values.nickname ? { nickname: values.nickname } : {}),
           ...(values.birthday
-            ? { birthday: parseBirthdayInput(values.birthday) }
+            ? {
+                birthday: parseBirthdayInput(
+                  values.birthday,
+                  values.includeBirthdayYear,
+                ),
+              }
             : {}),
           ...(person?.sourceId ? { sourceId: person.sourceId } : {}),
           ...(person?.photo ? { photo: person.photo } : {}),
@@ -278,16 +291,25 @@ export function PersonForm({ person }: PersonFormProps) {
           >
             <input className={inputClassName} {...register("nickname")} />
           </Field>
-          <Field
-            label={t("personForm", "birthday")}
-            error={errors.birthday?.message}
-          >
-            <input
-              className={inputClassName}
-              type="date"
-              {...register("birthday")}
-            />
-          </Field>
+          <Controller
+            control={control}
+            name="birthday"
+            render={({ field }) => (
+              <FlexibleDatePicker
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                includeYear={Boolean(includeBirthdayYear)}
+                onYearChange={(value) =>
+                  setValue("includeBirthdayYear", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                label={t("personForm", "birthday")}
+                error={errors.birthday?.message}
+              />
+            )}
+          />
           <Field label={t("personForm", "phone")} error={errors.phone?.message}>
             <input
               className={inputClassName}

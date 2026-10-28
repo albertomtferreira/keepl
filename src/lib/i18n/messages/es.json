@@ -563,5 +563,14 @@
     "time": "Hora",
     "error": "No se pudieron guardar los ajustes. Inténtalo de nuevo.",
     "description": "Recordatorios según el horario seleccionado."
+  },
+  "datePicker": {
+    "day": "Día",
+    "month": "Mes",
+    "selectMonth": "Seleccionar mes",
+    "includeYear": "Incluir año",
+    "year": "Año",
+    "hint": "Deja el año sin marcar si no lo conoces.",
+    "invalidDate": "Introduce una fecha válida"
   }
 }

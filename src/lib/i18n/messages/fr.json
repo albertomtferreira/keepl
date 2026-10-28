@@ -563,5 +563,14 @@
     "time": "Heure",
     "error": "Impossible d'enregistrer les réglages. Réessayez.",
     "description": "Rappels correspondant à vos horaires."
+  },
+  "datePicker": {
+    "day": "Jour",
+    "month": "Mois",
+    "selectMonth": "Choisir un mois",
+    "includeYear": "Inclure l’année",
+    "year": "Année",
+    "hint": "Ne cochez pas l’année si elle est inconnue.",
+    "invalidDate": "Saisissez une date valide"
   }
 }

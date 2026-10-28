@@ -36,15 +36,41 @@ export function flexibleDateFromInput(
     return undefined;
   }
 
-  if (includeYear) {
-    const [year, month, day] = value.split("-").map(Number);
-    return year && month && day
-      ? { year, month, day, precision: "full" }
-      : undefined;
-  }
-
-  const [, month, day] = value.split("-").map(Number);
-  return month && day ? { month, day, precision: "month-day" } : undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!/^\d{0,4}-\d{1,2}-\d{1,2}$/.test(value)) return undefined;
+  const validationYear = includeYear ? year : 2000;
+  const leapYear =
+    validationYear % 4 === 0 &&
+    (validationYear % 100 !== 0 || validationYear % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  if (
+    !Number.isInteger(validationYear) ||
+    validationYear < 1 ||
+    validationYear > 9999 ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12 ||
+    !Number.isInteger(day) ||
+    day < 1 ||
+    day > daysInMonth[month - 1]
+  )
+    return undefined;
+  return includeYear
+    ? { year, month, day, precision: "full" }
+    : { month, day, precision: "month-day" };
 }
 
 export function flexibleDateInputValue(date?: FlexibleDate) {
@@ -52,7 +78,7 @@ export function flexibleDateInputValue(date?: FlexibleDate) {
     return "";
   }
 
-  const year = date.year ?? 2000;
+  const year = date.year ?? "";
   return `${year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
 }
 

@@ -563,5 +563,14 @@
     "time": "Hora",
     "error": "Não foi possível guardar as definições. Tente novamente.",
     "description": "Lembretes de acordo com o horário selecionado."
+  },
+  "datePicker": {
+    "day": "Dia",
+    "month": "Mês",
+    "selectMonth": "Selecionar mês",
+    "includeYear": "Incluir ano",
+    "year": "Ano",
+    "hint": "Deixe o ano desmarcado se for desconhecido.",
+    "invalidDate": "Introduza uma data válida"
   }
 }
